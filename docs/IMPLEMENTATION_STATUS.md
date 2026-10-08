@@ -1,21 +1,29 @@
 # IMPLEMENTATION_STATUS.md
 
 ## Current status
-Repository initialized. Architecture documentation updated for the standalone Web Admin architecture.
+Repository initialized. Architecture documentation updated for the three-repository deployment model.
 
 ## Approved architecture
 - [x] Separate repository for Telegram bot
-- [x] Node.js + TypeScript
-- [x] grammY
-- [x] Backend accessed over internal HTTP
+- [x] Backend in `DinarSharipov/autobot-backend`
+- [x] Web Admin in `DinarSharipov/autobot-web`
+- [x] Web Admin will run on a separate future server
+- [x] Node.js + TypeScript + grammY
+- [x] Bot/backend communication over internal Docker network
 - [x] Shared Docker network: `autobot-shared`
 - [x] Backend DNS name: `autobot-api`
-- [x] No direct PostgreSQL access
-- [x] No direct Redis access
+- [x] No direct PostgreSQL/Redis access
 - [x] Business logic belongs to backend
-- [x] Standalone Web Admin is a separate client of the same backend
 - [x] Telegram Mini App / Web App excluded
-- [x] Bot and Web Admin share one user/domain model
+
+## CI/CD
+- [x] `SERVER_HOST` configured in GitHub Actions
+- [x] `SERVER_PORT` configured in GitHub Actions
+- [x] `SERVER_USER` configured in GitHub Actions
+- [x] Dedicated `SERVER_SSH_KEY` configured
+- [x] `SERVER_KNOWN_HOSTS` configured
+- [ ] GitHub Actions workflow implementation
+- [ ] First deployment validation
 
 ## Product decisions captured
 - [x] Immediate one-time posts
@@ -25,7 +33,7 @@ Repository initialized. Architecture documentation updated for the standalone We
 - [x] MODERATION publishing
 - [x] Revision requests during moderation
 - [x] Subscription-dependent limits/features
-- [x] Moderation state shared across bot and Web Admin
+- [x] Shared moderation state across bot and Web Admin
 
 ## Implementation progress
 - [ ] Application scaffold
@@ -40,5 +48,5 @@ Repository initialized. Architecture documentation updated for the standalone We
 - [ ] Subscription/usage UI
 - [ ] Web Admin entry links where needed
 - [ ] Docker runtime
-- [ ] CI/CD
+- [ ] CI/CD workflow
 - [ ] Automated tests
