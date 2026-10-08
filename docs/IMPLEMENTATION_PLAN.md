@@ -1,7 +1,7 @@
 # IMPLEMENTATION_PLAN.md
 
 ## Goal
-Build the grammY Telegram client for Autobot while keeping all domain logic in `autobot-backend` and supporting coexistence with the standalone Web Admin.
+Build the grammY Telegram client for Autobot while keeping all domain logic in `autobot-backend` and interoperating with the standalone `autobot-web` client.
 
 ## Planned implementation
 
@@ -17,7 +17,7 @@ Build the grammY Telegram client for Autobot while keeping all domain logic in `
 - Configure `BACKEND_URL=http://autobot-api:3000`.
 - Add request timeout/retry policy where safe.
 - Map backend validation/domain errors to clear Telegram messages.
-- Treat the NestJS API as the single source of business rules shared with the Web Admin.
+- Treat the NestJS API as the single source of business rules shared with Web Admin.
 
 ### 3. Telegram flows
 Implement UI flows for:
@@ -42,28 +42,39 @@ For MODERATION mode:
 For AUTO mode:
 - submit the request and let the backend continue generation/publication without manual approval
 
-Moderation state must be shared with the Web Admin through backend persistence/API. A moderation action performed in one client must be visible in the other.
+Moderation state must be persisted by the backend so changes made from Web Admin are visible in the bot and vice versa.
 
 ### 5. Web Admin coexistence
 - Do not implement Telegram Mini App / Web App.
-- Keep bot flows independent from the browser UI.
-- Allow the bot to provide links/entry points to the standalone Web Admin where useful.
-- Do not store separate user state that conflicts with the common backend account.
+- Do not implement Web Admin in this repository.
+- Web Admin lives in `DinarSharipov/autobot-web`.
+- Keep bot flows independent from browser UI.
+- Allow links to the standalone Web Admin where useful.
 
 ### 6. Infrastructure
 - Run as container `autobot-bot`.
-- Attach only to external Docker network `autobot-shared`.
+- Attach to external Docker network `autobot-shared`.
 - Communicate with backend using Docker DNS name `autobot-api`.
-- Keep deployment independent from the backend repository.
+- Bot and backend are deployed to the same server.
+- Web Admin is deployed independently to another server.
 
 ### 7. CI/CD
-- Build and test on push/PR.
-- Build Docker image.
-- Deploy/restart only the bot service on the shared server.
-- Do not restart backend, Web Admin, PostgreSQL, or Redis during bot deployment.
+GitHub Actions deployment secrets for the current bot server:
+- `SERVER_HOST`
+- `SERVER_PORT`
+- `SERVER_USER`
+- `SERVER_SSH_KEY`
+- `SERVER_KNOWN_HOSTS`
+
+Pipeline goals:
+- lint/test/build on push/PR
+- build Docker image
+- deploy/restart only the bot service
+- do not restart backend/PostgreSQL/Redis
+- do not manage Web Admin deployment from this repository
 
 ## Out of scope for this repository
-- Web Admin implementation
+- Web Admin implementation/deployment
 - Telegram authentication for Web Admin
 - Prisma/schema/migrations
 - PostgreSQL
@@ -72,4 +83,4 @@ Moderation state must be shared with the Web Admin through backend persistence/A
 - subscription enforcement
 - scheduler implementation
 - background workers
-- direct Telegram scheduled publishing from workers
+- direct scheduled publishing from workers
