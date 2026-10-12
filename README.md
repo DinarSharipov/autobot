@@ -1,8 +1,11 @@
 # Autobot Bot
 
 grammY service for the Autobot project. The bot resolves Telegram users through
-the backend, provides subscription/usage information, and lets users list or
-create content topics.
+the backend and provides Telegram UI for channels, topics, post generation,
+immediate or one-time scheduled publication, moderation, and subscription usage.
+
+Available commands include `/start`, `/menu`, `/channels`, `/topics`, `/posts`,
+`/createpost`, `/moderation`, and `/schedules`.
 
 ## Local development
 

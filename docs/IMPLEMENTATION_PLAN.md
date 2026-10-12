@@ -22,14 +22,14 @@ Build the grammY Telegram client for Autobot while keeping all domain logic in `
 ### 3. Telegram flows
 Implement UI flows for:
 - [x] onboarding
-- channels
+- [x] channels
 - [x] list and creation of topics
-- posts
-- immediate one-time publication
-- scheduled one-time publication
+- [x] posts
+- [x] immediate one-time publication
+- [x] scheduled one-time publication
 - recurring publication
-- moderation and approval
-- revision requests
+- [x] moderation and approval
+- [x] revision requests
 - subscription/usage status
 
 ### 4. Moderation UX

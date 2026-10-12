@@ -48,8 +48,30 @@ export function backendErrorMessage(error: unknown): string {
       return 'Сервис временно недоступен. Попробуйте позднее.';
     case 'ENTITLEMENT_LIMIT_EXCEEDED':
       return 'Достигнут лимит вашего тарифа.';
+    case 'USAGE_LIMIT_REACHED':
+      return 'Лимит этой операции по вашему тарифу исчерпан.';
     case 'VALIDATION_FAILED':
       return 'Проверьте введённые данные и попробуйте ещё раз.';
+    case 'CHANNEL_NOT_ACTIVE':
+      return 'Канал не активен. Проверьте, что бот добавлен администратором канала.';
+    case 'POST_NOT_ACTIVE':
+      return 'Пост больше не активен и не может быть запланирован.';
+    case 'RUN_AT_OFFSET_REQUIRED':
+      return 'Дата должна содержать часовой пояс, например +03:00.';
+    case 'INVALID_TIMEZONE':
+      return 'Неизвестный часовой пояс.';
+    case 'MODERATION_NOT_READY':
+      return 'Текст ещё не готов к модерации. Попробуйте обновить список позже.';
+    case 'STALE_RESOURCE_VERSION':
+      return 'Данные уже изменились. Откройте раздел заново и повторите действие.';
+    case 'SCHEDULE_NOT_EDITABLE':
+      return 'Это расписание уже нельзя изменить в текущем состоянии.';
+    case 'SCHEDULE_NOT_FOUND':
+      return 'Расписание больше не найдено. Обновите список.';
+    case 'POST_NOT_PUBLISHABLE':
+      return 'Пост сейчас нельзя опубликовать.';
+    case 'MODERATION_ALREADY_DECIDED':
+      return 'Эта заявка на модерацию уже обработана.';
     default:
       return 'Не удалось обработать запрос. Попробуйте ещё раз.';
   }

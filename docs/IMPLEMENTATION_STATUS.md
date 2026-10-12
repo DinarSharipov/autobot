@@ -1,7 +1,10 @@
 # IMPLEMENTATION_STATUS.md
 
 ## Current status
-The deployed version is a minimal grammY application. The current worktree adds backend HMAC integration, Telegram-user onboarding, menu navigation, subscription/usage display, and list/create topic flows; it has not been deployed yet.
+The current worktree adds backend HMAC integration, Telegram-user onboarding, menu navigation,
+subscription/usage display, channel management, topic management, post creation/publication,
+resource editing/archiving, one-time scheduling with pause/resume/cancel controls, and moderation
+actions. These changes have not been deployed yet.
 
 Local quality gates, GitHub Actions, production image publication, and SSH deployment pass. The `autobot-bot` container is running and healthy on the production server, and it is attached to the external `autobot-shared` network. The deployment updates only `autobot-bot`.
 
@@ -45,11 +48,11 @@ Local quality gates, GitHub Actions, production image publication, and SSH deplo
 - [x] `/start` welcome response
 - [x] Backend API client with HMAC authentication
 - [x] Onboarding
-- [ ] Channels UI
+- [x] Channels UI
 - [x] Topics UI: list and creation
-- [ ] Posts UI
-- [ ] Scheduling UI
-- [ ] Moderation/revision UI
+- [x] Posts UI and immediate publication request
+- [x] One-time scheduling UI
+- [x] Moderation/revision UI
 - [x] Subscription/usage UI
 - [ ] Web Admin entry links where needed
 - [x] Docker runtime

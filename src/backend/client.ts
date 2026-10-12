@@ -24,6 +24,106 @@ export type Topic = {
   version: number;
 };
 
+export type Channel = {
+  createdAt: string;
+  id: string;
+  status: 'ACTIVE' | 'ARCHIVED' | 'INVALID' | 'PENDING';
+  telegramChatId: string;
+  title: string;
+  updatedAt: string;
+  username: string | null;
+  verifiedAt: string | null;
+  version: number;
+};
+
+export type Post = {
+  channelId: string;
+  createdAt: string;
+  generateImage: boolean;
+  id: string;
+  prompt: string;
+  publicationMode: 'AUTO' | 'MODERATION';
+  status: 'ACTIVE' | 'ARCHIVED' | 'CANCELLED' | 'DRAFT';
+  title: string | null;
+  topicId: string | null;
+  updatedAt: string;
+  version: number;
+};
+
+export type Publication = {
+  attemptCount: number;
+  createdAt: string;
+  errorCode: string | null;
+  id: string;
+  nextAttemptAt: string | null;
+  postId: string;
+  publishedAt: string | null;
+  publishedWithImage: boolean;
+  scheduledFor: string;
+  selectedVersionId: string | null;
+  status:
+    | 'AWAITING_MODERATION'
+    | 'CANCELLED'
+    | 'DELIVERY_UNKNOWN'
+    | 'FAILED'
+    | 'GENERATING'
+    | 'PENDING'
+    | 'PUBLISHED'
+    | 'PUBLISHING'
+    | 'READY'
+    | 'RETRY_WAIT'
+    | 'SKIPPED';
+  updatedAt: string;
+};
+
+export type PostVersion = {
+  createdAt: string;
+  generatedAt: string | null;
+  id: string;
+  postId: string;
+  publicationId: string | null;
+  sequence: number;
+  status:
+    | 'APPROVED'
+    | 'CANCELLED'
+    | 'FAILED'
+    | 'GENERATED'
+    | 'GENERATION_PENDING'
+    | 'GENERATING'
+    | 'REJECTED'
+    | 'SUPERSEDED';
+  text: string | null;
+};
+
+export type ModerationRequest = {
+  createdAt: string;
+  decidedAt: string | null;
+  feedback: string | null;
+  id: string;
+  postId: string;
+  postVersion: PostVersion;
+  publicationId: string;
+  status:
+    'APPROVED' | 'CANCELLED' | 'PENDING' | 'REJECTED' | 'REVISION_REQUESTED';
+  version: number;
+};
+
+export type Schedule = {
+  createdAt: string;
+  id: string;
+  kind: 'ONCE' | 'RECURRING';
+  misfireGraceSeconds: number;
+  misfirePolicy: 'FIRE_ONCE' | 'LATEST_ONLY' | 'SKIP';
+  nextRunAt: string | null;
+  postId: string;
+  runAt: string | null;
+  rrule: string | null;
+  status: 'ACTIVE' | 'CANCELLED' | 'COMPLETED' | 'PAUSED';
+  timezone: string;
+  updatedAt: string;
+  version: number;
+};
+
 export type Subscription = {
   entitlements: {
     channelLimit: number | null;
@@ -51,6 +151,10 @@ export type Usage = {
 };
 
 type ApiEnvelope<T> = { data: T };
+type ApiPage<T> = {
+  data: T[];
+  page: { hasMore: boolean; nextCursor: string | null };
+};
 
 type ApiErrorPayload = {
   error?: {
@@ -138,10 +242,298 @@ export class BackendClient {
   }
 
   async listTopics(telegramUserId: string): Promise<Topic[]> {
-    const response = await this.request<ApiEnvelope<Topic[]>>(
+    const response = await this.request<ApiPage<Topic>>(
       telegramUserId,
       'GET',
       '/api/v1/topics?limit=20',
+    );
+    return response.data;
+  }
+
+  async listChannels(telegramUserId: string): Promise<Channel[]> {
+    const response = await this.request<ApiPage<Channel>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/channels?limit=20',
+    );
+    return response.data;
+  }
+
+  async createChannel(
+    telegramUserId: string,
+    telegramChatId: string,
+  ): Promise<Channel> {
+    const response = await this.request<ApiEnvelope<Channel>>(
+      telegramUserId,
+      'POST',
+      '/api/v1/channels',
+      { body: { telegramChatId }, idempotencyKey: randomUUID() },
+    );
+    return response.data;
+  }
+
+  async verifyChannel(
+    telegramUserId: string,
+    channelId: string,
+  ): Promise<Channel> {
+    const response = await this.request<ApiEnvelope<Channel>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/channels/${channelId}/verify`,
+      { idempotencyKey: randomUUID() },
+    );
+    return response.data;
+  }
+
+  async updateChannel(
+    telegramUserId: string,
+    channelId: string,
+    version: number,
+    title: string,
+  ): Promise<Channel> {
+    const response = await this.request<ApiEnvelope<Channel>>(
+      telegramUserId,
+      'PATCH',
+      `/api/v1/channels/${channelId}`,
+      { body: { title }, ifMatch: version },
+    );
+    return response.data;
+  }
+
+  async archiveChannel(
+    telegramUserId: string,
+    channelId: string,
+    version: number,
+  ): Promise<void> {
+    await this.request<void>(
+      telegramUserId,
+      'DELETE',
+      `/api/v1/channels/${channelId}`,
+      { ifMatch: version },
+    );
+  }
+
+  async listPosts(telegramUserId: string): Promise<Post[]> {
+    const response = await this.request<ApiPage<Post>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/posts?limit=20',
+    );
+    return response.data;
+  }
+
+  async createPost(
+    telegramUserId: string,
+    input: {
+      channelId: string;
+      topicId: string | null;
+      prompt: string;
+      generateImage: boolean;
+      publicationMode: Post['publicationMode'];
+    },
+  ): Promise<Post> {
+    const response = await this.request<ApiEnvelope<Post>>(
+      telegramUserId,
+      'POST',
+      '/api/v1/posts',
+      { body: input, idempotencyKey: randomUUID() },
+    );
+    return response.data;
+  }
+
+  async updatePost(
+    telegramUserId: string,
+    postId: string,
+    version: number,
+    input: Partial<{
+      channelId: string;
+      topicId: string | null;
+      title: string | null;
+      prompt: string;
+      generateImage: boolean;
+      publicationMode: Post['publicationMode'];
+    }>,
+  ): Promise<Post> {
+    const response = await this.request<ApiEnvelope<Post>>(
+      telegramUserId,
+      'PATCH',
+      `/api/v1/posts/${postId}`,
+      { body: input, ifMatch: version },
+    );
+    return response.data;
+  }
+
+  async archivePost(
+    telegramUserId: string,
+    postId: string,
+    version: number,
+  ): Promise<void> {
+    await this.request<void>(
+      telegramUserId,
+      'DELETE',
+      `/api/v1/posts/${postId}`,
+      { ifMatch: version },
+    );
+  }
+
+  async listPostVersions(
+    telegramUserId: string,
+    postId: string,
+  ): Promise<PostVersion[]> {
+    const response = await this.request<ApiPage<PostVersion>>(
+      telegramUserId,
+      'GET',
+      `/api/v1/posts/${postId}/versions?limit=20`,
+    );
+    return response.data;
+  }
+
+  async publishPost(
+    telegramUserId: string,
+    postId: string,
+    version: number,
+  ): Promise<Publication> {
+    const response = await this.request<ApiEnvelope<Publication>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/posts/${postId}/publications`,
+      { idempotencyKey: randomUUID(), ifMatch: version },
+    );
+    return response.data;
+  }
+
+  async listModeration(telegramUserId: string): Promise<ModerationRequest[]> {
+    const response = await this.request<ApiPage<ModerationRequest>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/moderation?limit=20',
+    );
+    return response.data;
+  }
+
+  async approveModeration(
+    telegramUserId: string,
+    requestId: string,
+    version: number,
+  ): Promise<Publication> {
+    const response = await this.request<ApiEnvelope<Publication>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/moderation/${requestId}/approve`,
+      { idempotencyKey: randomUUID(), ifMatch: version },
+    );
+    return response.data;
+  }
+
+  async requestRevision(
+    telegramUserId: string,
+    requestId: string,
+    version: number,
+    feedback: string,
+  ): Promise<Publication> {
+    const response = await this.request<ApiEnvelope<Publication>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/moderation/${requestId}/revision`,
+      { body: { feedback }, idempotencyKey: randomUUID(), ifMatch: version },
+    );
+    return response.data;
+  }
+
+  async rejectModeration(
+    telegramUserId: string,
+    requestId: string,
+    version: number,
+  ): Promise<Publication> {
+    const response = await this.request<ApiEnvelope<Publication>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/moderation/${requestId}/reject`,
+      { idempotencyKey: randomUUID(), ifMatch: version },
+    );
+    return response.data;
+  }
+
+  async listSchedules(telegramUserId: string): Promise<Schedule[]> {
+    const response = await this.request<ApiPage<Schedule>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/schedules?limit=20',
+    );
+    return response.data;
+  }
+
+  async createOneTimeSchedule(
+    telegramUserId: string,
+    input: { postId: string; runAt: string; timezone: string },
+  ): Promise<Schedule> {
+    const response = await this.request<ApiEnvelope<Schedule>>(
+      telegramUserId,
+      'POST',
+      '/api/v1/schedules',
+      {
+        body: {
+          ...input,
+          kind: 'ONCE',
+          misfireGraceSeconds: 86_400,
+          misfirePolicy: 'FIRE_ONCE',
+        },
+        idempotencyKey: randomUUID(),
+      },
+    );
+    return response.data;
+  }
+
+  async cancelSchedule(
+    telegramUserId: string,
+    scheduleId: string,
+    version: number,
+  ): Promise<void> {
+    await this.request<void>(
+      telegramUserId,
+      'DELETE',
+      `/api/v1/schedules/${scheduleId}`,
+      { ifMatch: version },
+    );
+  }
+
+  async pauseSchedule(
+    telegramUserId: string,
+    scheduleId: string,
+    version: number,
+  ): Promise<Schedule> {
+    return this.transitionSchedule(
+      telegramUserId,
+      scheduleId,
+      'pause',
+      version,
+    );
+  }
+
+  async resumeSchedule(
+    telegramUserId: string,
+    scheduleId: string,
+    version: number,
+  ): Promise<Schedule> {
+    return this.transitionSchedule(
+      telegramUserId,
+      scheduleId,
+      'resume',
+      version,
+    );
+  }
+
+  private async transitionSchedule(
+    telegramUserId: string,
+    scheduleId: string,
+    action: 'pause' | 'resume',
+    version: number,
+  ): Promise<Schedule> {
+    const response = await this.request<ApiEnvelope<Schedule>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/schedules/${scheduleId}/${action}`,
+      { idempotencyKey: randomUUID(), ifMatch: version },
     );
     return response.data;
   }
@@ -162,11 +554,39 @@ export class BackendClient {
     return response.data;
   }
 
+  async updateTopic(
+    telegramUserId: string,
+    topicId: string,
+    version: number,
+    promptTemplate: string,
+  ): Promise<Topic> {
+    const response = await this.request<ApiEnvelope<Topic>>(
+      telegramUserId,
+      'PATCH',
+      `/api/v1/topics/${topicId}`,
+      { body: { promptTemplate }, ifMatch: version },
+    );
+    return response.data;
+  }
+
+  async archiveTopic(
+    telegramUserId: string,
+    topicId: string,
+    version: number,
+  ): Promise<void> {
+    await this.request<void>(
+      telegramUserId,
+      'DELETE',
+      `/api/v1/topics/${topicId}`,
+      { ifMatch: version },
+    );
+  }
+
   private async request<T>(
     telegramUserId: string,
-    method: 'GET' | 'POST',
+    method: 'DELETE' | 'GET' | 'PATCH' | 'POST',
     path: string,
-    options: { body?: unknown; idempotencyKey?: string } = {},
+    options: { body?: unknown; idempotencyKey?: string; ifMatch?: number } = {},
   ): Promise<T> {
     if (!this.keyId || !this.secret) {
       throw new BackendApiError('BOT_INTEGRATION_NOT_CONFIGURED', 503);
@@ -203,6 +623,9 @@ export class BackendClient {
     }
     if (options.idempotencyKey) {
       headers.set('Idempotency-Key', options.idempotencyKey);
+    }
+    if (options.ifMatch !== undefined) {
+      headers.set('If-Match', `"${options.ifMatch}"`);
     }
 
     let response: Response;

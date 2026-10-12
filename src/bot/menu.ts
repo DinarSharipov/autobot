@@ -6,9 +6,15 @@ export function mainMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text('Темы', 'menu:topics')
     .row()
-    .text('Подписка и лимиты', 'menu:subscription')
+    .text('Каналы', 'menu:channels')
     .row()
-    .text('Каналы', 'menu:channels');
+    .text('Посты', 'menu:posts')
+    .row()
+    .text('Модерация', 'menu:moderation')
+    .row()
+    .text('Расписание', 'menu:schedules')
+    .row()
+    .text('Подписка и лимиты', 'menu:subscription');
 }
 
 export async function showMainMenu(context: Context): Promise<void> {

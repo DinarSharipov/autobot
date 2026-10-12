@@ -1,10 +1,18 @@
 import { Bot } from 'grammy';
 
 import { BackendClient } from './backend/client.js';
-import { registerTopicHandlers } from './bot/topics.js';
+import { clearChannelDrafts, registerChannelHandlers } from './bot/channels.js';
+import {
+  clearModerationDrafts,
+  registerModerationHandlers,
+} from './bot/moderation.js';
+import { clearPostDrafts, registerPostHandlers } from './bot/posts.js';
+import { registerScheduleHandlers } from './bot/schedules.js';
+import { clearTopicDrafts, registerTopicHandlers } from './bot/topics.js';
 import { registerStartHandler } from './bot/start.js';
-import { showMainMenu } from './bot/menu.js';
+import { mainMenuKeyboard, showMainMenu } from './bot/menu.js';
 import { registerSubscriptionHandlers } from './bot/subscription.js';
+import { telegramUserId } from './bot/common.js';
 import { parseEnvironment } from './config/environment.js';
 
 const environment = parseEnvironment(process.env);
@@ -17,17 +25,28 @@ const backend = new BackendClient({
 
 registerStartHandler(bot, backend);
 registerSubscriptionHandlers(bot, backend);
+registerChannelHandlers(bot, backend);
+registerPostHandlers(bot, backend);
+registerModerationHandlers(bot, backend);
+registerScheduleHandlers(bot, backend);
 registerTopicHandlers(bot, backend);
+bot.command('cancel', async (context) => {
+  const userId = telegramUserId(context);
+  if (userId) {
+    clearChannelDrafts(userId);
+    clearModerationDrafts(userId);
+    clearPostDrafts(userId);
+    clearTopicDrafts(userId);
+  }
+  await context.reply('Текущий сценарий отменён.', {
+    reply_markup: mainMenuKeyboard(),
+  });
+});
 bot.command('menu', showMainMenu);
 bot.callbackQuery('menu:home', async (context) => {
   await context.answerCallbackQuery();
   await showMainMenu(context);
 });
-bot.callbackQuery('menu:channels', async (context) => {
-  await context.answerCallbackQuery();
-  await context.reply('Управление каналами будет следующим этапом.');
-});
-
 let isStopping = false;
 
 function log(
