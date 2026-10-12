@@ -1,7 +1,9 @@
 # IMPLEMENTATION_STATUS.md
 
 ## Current status
-Repository initialized. Architecture documentation updated for the three-repository deployment model.
+Minimal deployable grammY application initialized. It starts long polling but intentionally contains no product handlers, commands, callbacks, menus, or backend API calls yet.
+
+Local quality gates, production image build, and Compose validation pass. The production server is reachable but currently has no Autobot containers or `autobot-shared` network. The deployment script creates that external network idempotently and updates only `autobot-bot`.
 
 ## Approved architecture
 - [x] Separate repository for Telegram bot
@@ -17,12 +19,13 @@ Repository initialized. Architecture documentation updated for the three-reposit
 - [x] Telegram Mini App / Web App excluded
 
 ## CI/CD
-- [x] `SERVER_HOST` configured in GitHub Actions
-- [x] `SERVER_PORT` configured in GitHub Actions
-- [x] `SERVER_USER` configured in GitHub Actions
-- [x] Dedicated `SERVER_SSH_KEY` configured
-- [x] `SERVER_KNOWN_HOSTS` configured
-- [ ] GitHub Actions workflow implementation
+- [x] `SERVER_HOST` copied from local `.env` to the GitHub `production` environment
+- [x] `SERVER_PORT` copied from local `.env` to the GitHub `production` environment
+- [x] `SERVER_USER` copied from local `.env` to the GitHub `production` environment
+- [x] `SERVER_PASSWORD` and `TELEGRAM_TOKEN` copied from local `.env` to GitHub secrets
+- [x] Password-based SSH deployment configured; a dedicated key remains a future hardening option
+- [x] Verified `SERVER_KNOWN_HOSTS` configured in the GitHub `production` environment
+- [x] GitHub Actions workflow implementation
 - [ ] First deployment validation
 
 ## Product decisions captured
@@ -36,8 +39,8 @@ Repository initialized. Architecture documentation updated for the three-reposit
 - [x] Shared moderation state across bot and Web Admin
 
 ## Implementation progress
-- [ ] Application scaffold
-- [ ] grammY bootstrap
+- [x] Application scaffold
+- [x] grammY bootstrap without product handlers
 - [ ] Backend API client
 - [ ] Onboarding
 - [ ] Channels UI
@@ -47,6 +50,6 @@ Repository initialized. Architecture documentation updated for the three-reposit
 - [ ] Moderation/revision UI
 - [ ] Subscription/usage UI
 - [ ] Web Admin entry links where needed
-- [ ] Docker runtime
-- [ ] CI/CD workflow
-- [ ] Automated tests
+- [x] Docker runtime
+- [x] CI/CD workflow
+- [x] Automated tests for the current scaffold

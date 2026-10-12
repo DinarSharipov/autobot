@@ -1,0 +1,36 @@
+{
+  "name": "autobot-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Telegram bot client for Autobot",
+  "type": "module",
+  "engines": {
+    "node": ">=24.11.0",
+    "npm": ">=11.6.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "start:dev": "tsx watch src/main.ts",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "grammy": "1.46.0",
+    "zod": "4.6.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.4"
+  }
+}
