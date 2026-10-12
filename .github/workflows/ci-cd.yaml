@@ -121,12 +121,13 @@ jobs:
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       AUTOBOT_BOT_IMAGE: ${{ needs.container.outputs.image }}
       BUILD_SHA: ${{ github.sha }}
-      PRODUCTION_ENV_FILE: ${{ runner.temp }}/autobot-bot.env
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
 
       - name: Render production environment
+        env:
+          PRODUCTION_ENV_FILE: ${{ runner.temp }}/autobot-bot.env
         run: node scripts/ci/render-production-env.mjs "$PRODUCTION_ENV_FILE"
 
       - name: Install password SSH fallback
@@ -134,4 +135,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes sshpass
 
       - name: Deploy immutable image
+        env:
+          PRODUCTION_ENV_FILE: ${{ runner.temp }}/autobot-bot.env
         run: bash scripts/ci/deploy-over-ssh.sh
