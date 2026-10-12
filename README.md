@@ -1,7 +1,8 @@
 # Autobot Bot
 
-Minimal deployable grammY service for the Autobot project. The bot handles
-`/start`; callback handlers, menus, and domain flows are not implemented yet.
+grammY service for the Autobot project. The bot resolves Telegram users through
+the backend, provides subscription/usage information, and lets users list or
+create content topics.
 
 ## Local development
 
@@ -13,7 +14,9 @@ npm ci
 npm run start:dev
 ```
 
-Required environment variable: `TELEGRAM_TOKEN`.
+Required environment variables: `TELEGRAM_TOKEN`, `BOT_SERVICE_ACTIVE_KEY_ID`,
+and `BOT_SERVICE_ACTIVE_SECRET`. The service key and secret must match the active
+bot HMAC credentials in `autobot-backend`; they must never be committed.
 
 The production backend URL defaults to `http://autobot-api:3000`. Both services
 must join the external Docker network `autobot-shared`.
@@ -24,7 +27,6 @@ must join the external Docker network `autobot-shared`.
 npm run format:check
 npm run lint
 npm run typecheck
-npm test
 npm run build
 ```
 

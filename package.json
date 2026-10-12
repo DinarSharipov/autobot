@@ -15,8 +15,7 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit --incremental false",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {
     "grammy": "1.46.0",
@@ -30,7 +29,6 @@
     "prettier": "3.9.10",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.1",
-    "vitest": "5.0.4"
+    "typescript-eslint": "8.71.1"
   }
 }

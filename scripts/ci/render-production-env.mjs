@@ -36,6 +36,8 @@ if (!['http:', 'https:'].includes(parsedBackendUrl.protocol)) {
 const values = {
   AUTOBOT_BOT_IMAGE: required('AUTOBOT_BOT_IMAGE'),
   BACKEND_URL: backendUrl,
+  BOT_SERVICE_ACTIVE_KEY_ID: required('BOT_SERVICE_ACTIVE_KEY_ID'),
+  BOT_SERVICE_ACTIVE_SECRET: required('BOT_SERVICE_ACTIVE_SECRET'),
   BUILD_SHA: required('BUILD_SHA'),
   LOG_LEVEL: safeValue('LOG_LEVEL', 'info'),
   TELEGRAM_TOKEN: required('TELEGRAM_TOKEN'),

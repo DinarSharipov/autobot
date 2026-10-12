@@ -13,7 +13,7 @@ Build the grammY Telegram client for Autobot while keeping all domain logic in `
 - Add Dockerfile and Docker Compose service.
 
 ### 2. Backend integration
-- Create a typed HTTP client.
+- [x] Create a typed HTTP client with HMAC service authentication.
 - Configure `BACKEND_URL=http://autobot-api:3000`.
 - Add request timeout/retry policy where safe.
 - Map backend validation/domain errors to clear Telegram messages.
@@ -21,9 +21,9 @@ Build the grammY Telegram client for Autobot while keeping all domain logic in `
 
 ### 3. Telegram flows
 Implement UI flows for:
-- onboarding
+- [x] onboarding
 - channels
-- topics
+- [x] list and creation of topics
 - posts
 - immediate one-time publication
 - scheduled one-time publication
@@ -67,7 +67,7 @@ GitHub Actions deployment secrets for the current bot server:
 - `SERVER_KNOWN_HOSTS`
 
 Pipeline goals:
-- lint/test/build on push/PR
+- format/lint/typecheck/build on push/PR
 - build Docker image
 - deploy/restart only the bot service
 - do not restart backend/PostgreSQL/Redis

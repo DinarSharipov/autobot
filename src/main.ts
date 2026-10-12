@@ -1,12 +1,32 @@
 import { Bot } from 'grammy';
 
+import { BackendClient } from './backend/client.js';
+import { registerTopicHandlers } from './bot/topics.js';
 import { registerStartHandler } from './bot/start.js';
+import { showMainMenu } from './bot/menu.js';
+import { registerSubscriptionHandlers } from './bot/subscription.js';
 import { parseEnvironment } from './config/environment.js';
 
 const environment = parseEnvironment(process.env);
 const bot = new Bot(environment.telegramToken);
+const backend = new BackendClient({
+  baseUrl: environment.backendUrl,
+  keyId: environment.botServiceActiveKeyId,
+  secret: environment.botServiceActiveSecret,
+});
 
-registerStartHandler(bot);
+registerStartHandler(bot, backend);
+registerSubscriptionHandlers(bot, backend);
+registerTopicHandlers(bot, backend);
+bot.command('menu', showMainMenu);
+bot.callbackQuery('menu:home', async (context) => {
+  await context.answerCallbackQuery();
+  await showMainMenu(context);
+});
+bot.callbackQuery('menu:channels', async (context) => {
+  await context.answerCallbackQuery();
+  await context.reply('Управление каналами будет следующим этапом.');
+});
 
 let isStopping = false;
 

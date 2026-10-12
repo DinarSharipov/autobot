@@ -21,6 +21,8 @@ Environment secrets:
 - `SERVER_KNOWN_HOSTS`
 - either `SERVER_SSH_KEY` or `SERVER_PASSWORD`
 - `TELEGRAM_TOKEN`
+- `BOT_SERVICE_ACTIVE_KEY_ID`
+- `BOT_SERVICE_ACTIVE_SECRET`
 
 Environment variables:
 
@@ -29,7 +31,9 @@ Environment variables:
 
 Never commit these values. The deployment workflow renders a temporary
 production environment file, transfers it with mode `0600`, and does not copy
-server credentials into the container.
+server credentials into the container. The two `BOT_SERVICE_*` secrets must
+match the active HMAC key configured in `autobot-backend`; they are independent
+from `TELEGRAM_TOKEN`.
 
 ## Workflow
 

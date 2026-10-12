@@ -21,10 +21,5 @@
     "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo",
     "types": ["node", "vitest/globals"]
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "eslint.config.js",
-    "vitest.config.ts"
-  ]
+  "include": ["src/**/*.ts", "eslint.config.js"]
 }

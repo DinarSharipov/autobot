@@ -77,6 +77,7 @@ Subscription capabilities are enforced by the backend, not by grammY handlers. L
 - Web Admin will be deployed to a different server in the future.
 
 ## Engineering rules
+- Do not write or add tests for this project.
 - Keep handlers small.
 - Put Telegram-specific code in bot modules only.
 - Access backend functionality through typed API clients/services.

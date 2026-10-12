@@ -9,6 +9,8 @@ services:
       NODE_ENV: production
       TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:?TELEGRAM_TOKEN is required}
       BACKEND_URL: ${BACKEND_URL:-http://autobot-api:3000}
+      BOT_SERVICE_ACTIVE_KEY_ID: ${BOT_SERVICE_ACTIVE_KEY_ID:-}
+      BOT_SERVICE_ACTIVE_SECRET: ${BOT_SERVICE_ACTIVE_SECRET:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       BUILD_SHA: ${BUILD_SHA:-development}
     networks:

@@ -1,14 +1,26 @@
 import type { Bot, Context } from 'grammy';
 
-export const START_MESSAGE = [
-  'Добро пожаловать в Autobot!',
-  '',
-  'Я помогу создавать, планировать и публиковать посты в Telegram-каналах.',
-  'Остальные функции появятся в следующих обновлениях.',
-].join('\n');
+import type { BackendClient } from '../backend/client.js';
+import { backendErrorMessage, resolveUser } from './common.js';
+import { showMainMenu } from './menu.js';
 
-export function registerStartHandler(bot: Bot<Context>): void {
+export function registerStartHandler(
+  bot: Bot<Context>,
+  backend: BackendClient,
+): void {
   bot.command('start', async (context) => {
-    await context.reply(START_MESSAGE);
+    try {
+      await resolveUser(context, backend);
+      await context.reply(
+        [
+          'Добро пожаловать в Autobot!',
+          '',
+          'Создавайте и планируйте публикации для Telegram-каналов.',
+        ].join('\n'),
+      );
+      await showMainMenu(context);
+    } catch (error) {
+      await context.reply(backendErrorMessage(error));
+    }
   });
 }
