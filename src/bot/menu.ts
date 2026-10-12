@@ -4,6 +4,8 @@ import { renderMenu } from './ui.js';
 
 export const MENU_TEXT = 'Выберите раздел:';
 export const CHANNEL_PICKER_REQUEST_ID = 1001;
+export const CHANNEL_ADD_TEXT = 'Добавить канал';
+export const CHANNEL_PICKER_TEXT = 'Выбрать канал';
 
 export function mainMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
@@ -33,7 +35,8 @@ export function mainReplyKeyboard(): Keyboard {
     .row()
     .text('Главное меню')
     .row()
-    .requestChat('Добавить канал', CHANNEL_PICKER_REQUEST_ID, {
+    .text(CHANNEL_ADD_TEXT)
+    .requestChat(CHANNEL_PICKER_TEXT, CHANNEL_PICKER_REQUEST_ID, {
       chat_is_channel: true,
       bot_is_member: true,
       user_administrator_rights: channelPickerUserRights(),

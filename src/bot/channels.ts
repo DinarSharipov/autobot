@@ -3,7 +3,9 @@ import { InlineKeyboard, type Bot, type Context } from 'grammy';
 import type { BackendClient, Channel } from '../backend/client.js';
 import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
 import {
+  CHANNEL_ADD_TEXT,
   CHANNEL_PICKER_REQUEST_ID,
+  CHANNEL_PICKER_TEXT,
   mainMenuKeyboard,
   mainReplyKeyboard,
 } from './menu.js';
@@ -22,7 +24,7 @@ export function clearChannelDrafts(userId: string): void {
 async function showChannelPicker(context: Context): Promise<void> {
   await renderMenu(
     context,
-    'Нажмите кнопку «Добавить канал» на клавиатуре над полем ввода. Telegram откроет список каналов, где вы администратор и Autobot уже добавлен администратором. Для отмены используйте /cancel.',
+    `Нажмите «${CHANNEL_PICKER_TEXT}» на клавиатуре над полем ввода — Telegram откроет список подходящих каналов. Если этой кнопки нет в вашем клиенте, нажмите «${CHANNEL_ADD_TEXT}» и отправьте числовой ID канала. Для отмены используйте /cancel.`,
     {
       reply_markup: mainReplyKeyboard(),
     },
@@ -151,6 +153,7 @@ export function registerChannelHandlers(
 
   bot.on('message:text', async (context, next) => {
     const userId = telegramUserId(context);
+    const text = context.message.text.trim();
     const editDraft = userId ? channelEditDrafts.get(userId) : undefined;
     if (userId && editDraft) {
       const title = context.message.text.trim();
@@ -184,21 +187,32 @@ export function registerChannelHandlers(
       }
       return;
     }
+
+    if (userId && text === CHANNEL_ADD_TEXT) {
+      channelDrafts.add(userId);
+      await renderMenu(
+        context,
+        'Отправьте числовой ID канала, например -1001234567890. Бот должен быть администратором канала с правом публикации сообщений. Для отмены используйте /cancel.',
+        { reply_markup: mainReplyKeyboard() },
+      );
+      return;
+    }
+
     if (!userId || !channelDrafts.has(userId)) {
       await next();
       return;
     }
 
-    if (context.message.text.trim() === 'Добавить канал') {
+    if (context.message.text.trim() === CHANNEL_PICKER_TEXT) {
       await showChannelPicker(context);
       return;
     }
 
-    const telegramChatId = context.message.text.trim();
+    const telegramChatId = text;
     if (!/^-?[1-9]\d*$/.test(telegramChatId)) {
       await renderMenu(
         context,
-        'Выберите канал кнопкой «Добавить канал». Для старых клиентов можно отправить числовой ID вида -1001234567890.',
+        `Используйте «${CHANNEL_PICKER_TEXT}» для выбора канала или отправьте числовой ID вида -1001234567890.`,
       );
       return;
     }
