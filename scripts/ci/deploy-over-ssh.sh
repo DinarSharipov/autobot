@@ -79,5 +79,5 @@ deploy_root='/opt/autobot/bot'
   "$PRODUCTION_ENV_FILE" \
   "$remote:$deploy_root/.env.next"
 
-printf '%s' "$GHCR_TOKEN" | "${ssh_prefix[@]}" ssh "${ssh_options[@]}" "$remote" \
+printf '%s\n' "$GHCR_TOKEN" | "${ssh_prefix[@]}" ssh "${ssh_options[@]}" "$remote" \
   "cd '$deploy_root' && GHCR_USER='$GHCR_USER' bash ./bot-deploy.sh"
