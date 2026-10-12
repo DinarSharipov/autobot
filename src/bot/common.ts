@@ -60,6 +60,8 @@ export function backendErrorMessage(error: unknown): string {
       return 'Бот добавлен в канал, но не может публиковать сообщения. Выдайте ему право «Публикация сообщений» и повторите попытку.';
     case 'TELEGRAM_CHAT_NOT_CHANNEL':
       return 'Выбранный чат не является каналом. Выберите канал Telegram.';
+    case 'CHANNEL_ALREADY_LINKED':
+      return 'Этот канал уже подключён к другому пользователю.';
     case 'POST_NOT_ACTIVE':
       return 'Пост больше не активен и не может быть запланирован.';
     case 'RUN_AT_OFFSET_REQUIRED':

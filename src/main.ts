@@ -1,7 +1,10 @@
 import { Bot, type Context } from 'grammy';
 
 import { BackendClient } from './backend/client.js';
-import { clearChannelDrafts, registerChannelHandlers } from './bot/channels.js';
+import {
+  clearChannelEditDraft,
+  registerChannelHandlers,
+} from './bot/channels.js';
 import {
   clearModerationDrafts,
   registerModerationHandlers,
@@ -14,7 +17,11 @@ import {
   showTopics,
 } from './bot/topics.js';
 import { registerStartHandler } from './bot/start.js';
-import { mainReplyKeyboard, showMainMenu } from './bot/menu.js';
+import {
+  configureTelegramBotUsername,
+  mainReplyKeyboard,
+  showMainMenu,
+} from './bot/menu.js';
 import {
   registerSubscriptionHandlers,
   showSubscription,
@@ -50,7 +57,7 @@ function clearConversationDrafts(context: Context): void {
     return;
   }
 
-  clearChannelDrafts(userId);
+  clearChannelEditDraft(userId);
   clearModerationDrafts(userId);
   clearPostDrafts(userId);
   clearTopicDrafts(userId);
@@ -151,6 +158,7 @@ process.once('SIGTERM', () => {
 async function main(): Promise<void> {
   await bot.start({
     onStart: ({ username }) => {
+      configureTelegramBotUsername(username);
       log('info', 'Telegram bot started', {
         username,
         backendUrl: environment.backendUrl,

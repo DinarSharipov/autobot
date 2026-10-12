@@ -1,38 +1,27 @@
 import { InlineKeyboard, type Bot, type Context } from 'grammy';
 
-import type { BackendClient, Channel } from '../backend/client.js';
-import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
 import {
-  CHANNEL_ADD_TEXT,
-  CHANNEL_PICKER_REQUEST_ID,
-  CHANNEL_PICKER_TEXT,
-  mainMenuKeyboard,
-  mainReplyKeyboard,
-} from './menu.js';
+  BackendApiError,
+  type BackendClient,
+  type Channel,
+} from '../backend/client.js';
+import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
+import { channelAddLink, mainMenuKeyboard } from './menu.js';
 import { renderMenu } from './ui.js';
 
-const channelDrafts = new Set<string>();
 const channelEditDrafts = new Map<
   string,
   { channelId: string; version: number }
 >();
-export function clearChannelDrafts(userId: string): void {
-  channelDrafts.delete(userId);
+export function clearChannelEditDraft(userId: string): void {
   channelEditDrafts.delete(userId);
 }
 
-async function showChannelPicker(context: Context): Promise<void> {
-  await renderMenu(
-    context,
-    `Нажмите «${CHANNEL_PICKER_TEXT}» на клавиатуре над полем ввода — Telegram откроет список подходящих каналов. Если этой кнопки нет в вашем клиенте, нажмите «${CHANNEL_ADD_TEXT}» и отправьте числовой ID канала. Для отмены используйте /cancel.`,
-    {
-      reply_markup: mainReplyKeyboard(),
-    },
+export function channelsKeyboard(channels: Channel[]): InlineKeyboard {
+  const keyboard = new InlineKeyboard().url(
+    'Подключить канал',
+    channelAddLink(),
   );
-}
-
-function channelsKeyboard(channels: Channel[]): InlineKeyboard {
-  const keyboard = new InlineKeyboard().text('Добавить канал', 'channels:add');
   for (const channel of channels) {
     keyboard
       .row()
@@ -50,6 +39,44 @@ function channelsKeyboard(channels: Channel[]): InlineKeyboard {
   return keyboard.row().text('В меню', 'menu:home');
 }
 
+async function createOrGetChannel(
+  backend: BackendClient,
+  userId: string,
+  telegramChatId: string,
+): Promise<Channel> {
+  try {
+    return await backend.createChannel(userId, telegramChatId);
+  } catch (error) {
+    if (
+      !(error instanceof BackendApiError) ||
+      error.code !== 'CHANNEL_ALREADY_LINKED'
+    ) {
+      throw error;
+    }
+
+    const existing = (await backend.listChannels(userId)).find(
+      (channel) => channel.telegramChatId === telegramChatId,
+    );
+    if (!existing) throw error;
+    return existing;
+  }
+}
+
+async function notifyUser(
+  context: Context,
+  userId: number,
+  text: string,
+  replyMarkup?: InlineKeyboard,
+): Promise<void> {
+  try {
+    await context.api.sendMessage(userId, text, {
+      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+    });
+  } catch {
+    // The user may not have opened a private chat with the bot yet.
+  }
+}
+
 export function registerChannelHandlers(
   bot: Bot<Context>,
   backend: BackendClient,
@@ -61,17 +88,6 @@ export function registerChannelHandlers(
   bot.callbackQuery('menu:channels', async (context) => {
     await context.answerCallbackQuery();
     await showChannels(context, backend);
-  });
-
-  bot.callbackQuery('channels:add', async (context) => {
-    await context.answerCallbackQuery();
-    const userId = telegramUserId(context);
-    if (!userId) {
-      await renderMenu(context, 'Не удалось определить пользователя Telegram.');
-      return;
-    }
-    channelDrafts.add(userId);
-    await showChannelPicker(context);
   });
 
   bot.callbackQuery(/^channels:verify:(.+)$/, async (context) => {
@@ -126,22 +142,52 @@ export function registerChannelHandlers(
     }
   });
 
-  bot.on('message:chat_shared', async (context) => {
-    const userId = telegramUserId(context);
-    const shared = context.message.chat_shared;
-    if (!userId || shared.request_id !== CHANNEL_PICKER_REQUEST_ID) return;
-    channelDrafts.add(userId);
+  bot.on('my_chat_member', async (context) => {
+    const update = context.myChatMember;
+    if (!update || update.chat.type !== 'channel') return;
+
+    const newMember = update.new_chat_member;
+    const canPost =
+      newMember.status === 'creator' ||
+      (newMember.status === 'administrator' &&
+        newMember.can_post_messages === true);
+    if (!canPost) return;
 
     try {
-      const resolvedUserId = await resolveUser(context, backend);
-      const channel = await backend.createChannel(
-        resolvedUserId,
-        String(shared.chat_id),
+      const userId = await resolveUser(context, backend);
+      const channel = await createOrGetChannel(
+        backend,
+        userId,
+        String(update.chat.id),
       );
-      channelDrafts.delete(userId);
+      await notifyUser(
+        context,
+        update.from.id,
+        `Канал «${channel.title}» подключён со статусом ${channel.status}.`,
+        channelsKeyboard([channel]),
+      );
+    } catch (error) {
+      await notifyUser(context, update.from.id, backendErrorMessage(error));
+    }
+  });
+
+  bot.on('message', async (context, next) => {
+    const origin = context.message.forward_origin;
+    if (!origin || origin.type !== 'channel' || !context.from) {
+      await next();
+      return;
+    }
+
+    try {
+      const userId = await resolveUser(context, backend);
+      const channel = await createOrGetChannel(
+        backend,
+        userId,
+        String(origin.chat.id),
+      );
       await renderMenu(
         context,
-        `Канал «${channel.title}» добавлен со статусом ${channel.status}.`,
+        `Канал «${channel.title}» подключён со статусом ${channel.status}.`,
         { reply_markup: channelsKeyboard([channel]) },
       );
     } catch (error) {
@@ -153,7 +199,6 @@ export function registerChannelHandlers(
 
   bot.on('message:text', async (context, next) => {
     const userId = telegramUserId(context);
-    const text = context.message.text.trim();
     const editDraft = userId ? channelEditDrafts.get(userId) : undefined;
     if (userId && editDraft) {
       const title = context.message.text.trim();
@@ -188,54 +233,7 @@ export function registerChannelHandlers(
       return;
     }
 
-    if (userId && text === CHANNEL_ADD_TEXT) {
-      channelDrafts.add(userId);
-      await renderMenu(
-        context,
-        'Отправьте числовой ID канала, например -1001234567890. Бот должен быть администратором канала с правом публикации сообщений. Для отмены используйте /cancel.',
-        { reply_markup: mainReplyKeyboard() },
-      );
-      return;
-    }
-
-    if (!userId || !channelDrafts.has(userId)) {
-      await next();
-      return;
-    }
-
-    if (context.message.text.trim() === CHANNEL_PICKER_TEXT) {
-      await showChannelPicker(context);
-      return;
-    }
-
-    const telegramChatId = text;
-    if (!/^-?[1-9]\d*$/.test(telegramChatId)) {
-      await renderMenu(
-        context,
-        `Используйте «${CHANNEL_PICKER_TEXT}» для выбора канала или отправьте числовой ID вида -1001234567890.`,
-      );
-      return;
-    }
-
-    try {
-      const resolvedUserId = await resolveUser(context, backend);
-      const channel = await backend.createChannel(
-        resolvedUserId,
-        telegramChatId,
-      );
-      channelDrafts.delete(userId);
-      await renderMenu(
-        context,
-        `Канал «${channel.title}» добавлен со статусом ${channel.status}.`,
-        {
-          reply_markup: channelsKeyboard([channel]),
-        },
-      );
-    } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
-    }
+    await next();
   });
 }
 
@@ -248,7 +246,7 @@ export async function showChannels(
     const channels = await backend.listChannels(userId);
     const text = channels.length
       ? ['Ваши каналы:', '', ...channels.map(formatChannel)].join('\n')
-      : 'Каналов пока нет. Добавьте канал, где бот является администратором.';
+      : 'Каналов пока нет. Нажмите «Подключить канал» и добавьте бота администратором с правом публикации сообщений.';
     await renderMenu(context, text, {
       reply_markup: channelsKeyboard(channels),
     });
