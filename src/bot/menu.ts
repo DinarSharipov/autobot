@@ -37,6 +37,7 @@ export function mainReplyKeyboard(): Keyboard {
       chat_is_channel: true,
       bot_is_member: true,
       user_administrator_rights: channelPickerUserRights(),
+      bot_administrator_rights: channelPickerBotRights(),
       request_title: true,
       request_username: true,
     })
@@ -63,7 +64,29 @@ function channelPickerUserRights() {
     can_post_stories: false,
     can_edit_stories: false,
     can_delete_stories: false,
-    can_post_messages: false,
+    can_post_messages: true,
+    can_edit_messages: false,
+    can_pin_messages: false,
+    can_manage_topics: false,
+    can_manage_direct_messages: false,
+    can_send_welcome_messages: false,
+  } as const;
+}
+
+function channelPickerBotRights() {
+  return {
+    is_anonymous: false,
+    can_manage_chat: true,
+    can_delete_messages: false,
+    can_manage_video_chats: false,
+    can_restrict_members: false,
+    can_promote_members: false,
+    can_change_info: false,
+    can_invite_users: false,
+    can_post_stories: false,
+    can_edit_stories: false,
+    can_delete_stories: false,
+    can_post_messages: true,
     can_edit_messages: false,
     can_pin_messages: false,
     can_manage_topics: false,

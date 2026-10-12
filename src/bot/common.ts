@@ -54,6 +54,12 @@ export function backendErrorMessage(error: unknown): string {
       return 'Проверьте введённые данные и попробуйте ещё раз.';
     case 'CHANNEL_NOT_ACTIVE':
       return 'Канал не активен. Проверьте, что бот добавлен администратором канала.';
+    case 'TELEGRAM_CHANNEL_UNAVAILABLE':
+      return 'Telegram не смог получить этот канал. Проверьте, что бот добавлен в канал и имеет права администратора.';
+    case 'TELEGRAM_BOT_CANNOT_POST':
+      return 'Бот добавлен в канал, но не может публиковать сообщения. Выдайте ему право «Публикация сообщений» и повторите попытку.';
+    case 'TELEGRAM_CHAT_NOT_CHANNEL':
+      return 'Выбранный чат не является каналом. Выберите канал Telegram.';
     case 'POST_NOT_ACTIVE':
       return 'Пост больше не активен и не может быть запланирован.';
     case 'RUN_AT_OFFSET_REQUIRED':

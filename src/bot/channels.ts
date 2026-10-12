@@ -19,6 +19,16 @@ export function clearChannelDrafts(userId: string): void {
   channelEditDrafts.delete(userId);
 }
 
+async function showChannelPicker(context: Context): Promise<void> {
+  await renderMenu(
+    context,
+    'Нажмите кнопку «Добавить канал» на клавиатуре над полем ввода. Telegram откроет список каналов, где вы администратор и Autobot уже добавлен администратором. Для отмены используйте /cancel.',
+    {
+      reply_markup: mainReplyKeyboard(),
+    },
+  );
+}
+
 function channelsKeyboard(channels: Channel[]): InlineKeyboard {
   const keyboard = new InlineKeyboard().text('Добавить канал', 'channels:add');
   for (const channel of channels) {
@@ -59,13 +69,7 @@ export function registerChannelHandlers(
       return;
     }
     channelDrafts.add(userId);
-    await renderMenu(
-      context,
-      'Нажмите «Добавить канал» и выберите канал, где вы администратор и Autobot уже добавлен администратором. Для отмены используйте /cancel.',
-      {
-        reply_markup: mainReplyKeyboard(),
-      },
-    );
+    await showChannelPicker(context);
   });
 
   bot.callbackQuery(/^channels:verify:(.+)$/, async (context) => {
@@ -182,6 +186,11 @@ export function registerChannelHandlers(
     }
     if (!userId || !channelDrafts.has(userId)) {
       await next();
+      return;
+    }
+
+    if (context.message.text.trim() === 'Добавить канал') {
+      await showChannelPicker(context);
       return;
     }
 
