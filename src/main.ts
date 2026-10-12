@@ -1,9 +1,12 @@
 import { Bot } from 'grammy';
 
+import { registerStartHandler } from './bot/start.js';
 import { parseEnvironment } from './config/environment.js';
 
 const environment = parseEnvironment(process.env);
 const bot = new Bot(environment.telegramToken);
+
+registerStartHandler(bot);
 
 let isStopping = false;
 

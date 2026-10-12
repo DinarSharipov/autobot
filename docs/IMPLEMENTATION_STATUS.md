@@ -1,7 +1,7 @@
 # IMPLEMENTATION_STATUS.md
 
 ## Current status
-Minimal deployable grammY application initialized and deployed to production. It starts long polling but intentionally contains no product handlers, commands, callbacks, menus, or backend API calls yet.
+Minimal deployable grammY application initialized and deployed to production. It starts long polling and responds to `/start`; callbacks, menus, domain flows, and backend API calls are not implemented yet.
 
 Local quality gates, GitHub Actions, production image publication, and SSH deployment pass. The `autobot-bot` container is running and healthy on the production server, and it is attached to the external `autobot-shared` network. The deployment updates only `autobot-bot`.
 
@@ -40,7 +40,8 @@ Local quality gates, GitHub Actions, production image publication, and SSH deplo
 
 ## Implementation progress
 - [x] Application scaffold
-- [x] grammY bootstrap without product handlers
+- [x] grammY bootstrap
+- [x] `/start` welcome response
 - [ ] Backend API client
 - [ ] Onboarding
 - [ ] Channels UI

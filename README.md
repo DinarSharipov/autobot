@@ -1,8 +1,7 @@
 # Autobot Bot
 
-Minimal deployable grammY service for the Autobot project. The current scaffold
-starts Telegram long polling but intentionally contains no commands, callback
-handlers, menus, or domain flows.
+Minimal deployable grammY service for the Autobot project. The bot handles
+`/start`; callback handlers, menus, and domain flows are not implemented yet.
 
 ## Local development
 
