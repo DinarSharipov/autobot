@@ -207,7 +207,7 @@ export function registerTopicHandlers(
   });
 }
 
-async function showTopics(
+export async function showTopics(
   context: Context,
   backend: BackendClient,
 ): Promise<void> {

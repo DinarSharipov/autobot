@@ -7,14 +7,24 @@ import {
   registerModerationHandlers,
 } from './bot/moderation.js';
 import { clearPostDrafts, registerPostHandlers } from './bot/posts.js';
-import { registerScheduleHandlers } from './bot/schedules.js';
-import { clearTopicDrafts, registerTopicHandlers } from './bot/topics.js';
+import { registerScheduleHandlers, showSchedules } from './bot/schedules.js';
+import {
+  clearTopicDrafts,
+  registerTopicHandlers,
+  showTopics,
+} from './bot/topics.js';
 import { registerStartHandler } from './bot/start.js';
-import { mainMenuKeyboard, showMainMenu } from './bot/menu.js';
-import { registerSubscriptionHandlers } from './bot/subscription.js';
+import { mainReplyKeyboard, showMainMenu } from './bot/menu.js';
+import {
+  registerSubscriptionHandlers,
+  showSubscription,
+} from './bot/subscription.js';
 import { telegramUserId } from './bot/common.js';
 import { renderMenu } from './bot/ui.js';
 import { parseEnvironment } from './config/environment.js';
+import { showChannels } from './bot/channels.js';
+import { showModeration } from './bot/moderation.js';
+import { showPosts } from './bot/posts.js';
 
 const environment = parseEnvironment(process.env);
 const bot = new Bot(environment.telegramToken);
@@ -31,6 +41,33 @@ registerPostHandlers(bot, backend);
 registerModerationHandlers(bot, backend);
 registerScheduleHandlers(bot, backend);
 registerTopicHandlers(bot, backend);
+bot.on('message:text', async (context, next) => {
+  switch (context.message.text.trim()) {
+    case 'Темы':
+      await showTopics(context, backend);
+      return;
+    case 'Каналы':
+      await showChannels(context, backend);
+      return;
+    case 'Посты':
+      await showPosts(context, backend);
+      return;
+    case 'Модерация':
+      await showModeration(context, backend);
+      return;
+    case 'Расписание':
+      await showSchedules(context, backend);
+      return;
+    case 'Подписка и лимиты':
+      await showSubscription(context, backend);
+      return;
+    case 'Главное меню':
+      await showMainMenu(context);
+      return;
+    default:
+      await next();
+  }
+});
 bot.command('cancel', async (context) => {
   const userId = telegramUserId(context);
   if (userId) {
@@ -40,7 +77,7 @@ bot.command('cancel', async (context) => {
     clearTopicDrafts(userId);
   }
   await renderMenu(context, 'Текущий сценарий отменён.', {
-    reply_markup: mainMenuKeyboard(),
+    reply_markup: mainReplyKeyboard(),
   });
 });
 bot.command('menu', showMainMenu);

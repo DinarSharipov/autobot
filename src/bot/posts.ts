@@ -385,7 +385,7 @@ async function askTopic(context: Context, topics: Topic[]): Promise<void> {
   });
 }
 
-async function showPosts(
+export async function showPosts(
   context: Context,
   backend: BackendClient,
 ): Promise<void> {

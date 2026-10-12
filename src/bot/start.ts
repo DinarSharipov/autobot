@@ -2,7 +2,7 @@ import type { Bot, Context } from 'grammy';
 
 import type { BackendClient } from '../backend/client.js';
 import { backendErrorMessage, resolveUser } from './common.js';
-import { mainMenuKeyboard } from './menu.js';
+import { mainReplyKeyboard } from './menu.js';
 import { renderMenu } from './ui.js';
 
 export function registerStartHandler(
@@ -19,10 +19,12 @@ export function registerStartHandler(
           '',
           'Создавайте и планируйте публикации для Telegram-каналов.',
         ].join('\n'),
-        { reply_markup: mainMenuKeyboard() },
+        { reply_markup: mainReplyKeyboard() },
       );
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error));
+      await renderMenu(context, backendErrorMessage(error), {
+        reply_markup: mainReplyKeyboard(),
+      });
     }
   });
 }

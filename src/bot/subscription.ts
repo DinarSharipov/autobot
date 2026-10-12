@@ -32,7 +32,7 @@ export function registerSubscriptionHandlers(
   });
 }
 
-async function showSubscription(
+export async function showSubscription(
   context: Context,
   backend: BackendClient,
 ): Promise<void> {

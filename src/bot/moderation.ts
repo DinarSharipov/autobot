@@ -87,7 +87,7 @@ export function registerModerationHandlers(
   });
 }
 
-async function showModeration(
+export async function showModeration(
   context: Context,
   backend: BackendClient,
 ): Promise<void> {

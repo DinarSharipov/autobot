@@ -2,7 +2,11 @@ import { InlineKeyboard, type Bot, type Context } from 'grammy';
 
 import type { BackendClient, Channel } from '../backend/client.js';
 import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
-import { mainMenuKeyboard } from './menu.js';
+import {
+  CHANNEL_PICKER_REQUEST_ID,
+  mainMenuKeyboard,
+  mainReplyKeyboard,
+} from './menu.js';
 import { renderMenu } from './ui.js';
 
 const channelDrafts = new Set<string>();
@@ -10,7 +14,6 @@ const channelEditDrafts = new Map<
   string,
   { channelId: string; version: number }
 >();
-
 export function clearChannelDrafts(userId: string): void {
   channelDrafts.delete(userId);
   channelEditDrafts.delete(userId);
@@ -58,7 +61,10 @@ export function registerChannelHandlers(
     channelDrafts.add(userId);
     await renderMenu(
       context,
-      'Отправьте числовой ID канала (например, -1001234567890). Бот должен быть администратором канала.',
+      'Нажмите «Добавить канал» и выберите канал, где вы администратор и Autobot уже добавлен администратором. Для отмены используйте /cancel.',
+      {
+        reply_markup: mainReplyKeyboard(),
+      },
     );
   });
 
@@ -114,6 +120,31 @@ export function registerChannelHandlers(
     }
   });
 
+  bot.on('message:chat_shared', async (context) => {
+    const userId = telegramUserId(context);
+    const shared = context.message.chat_shared;
+    if (!userId || shared.request_id !== CHANNEL_PICKER_REQUEST_ID) return;
+    channelDrafts.add(userId);
+
+    try {
+      const resolvedUserId = await resolveUser(context, backend);
+      const channel = await backend.createChannel(
+        resolvedUserId,
+        String(shared.chat_id),
+      );
+      channelDrafts.delete(userId);
+      await renderMenu(
+        context,
+        `Канал «${channel.title}» добавлен со статусом ${channel.status}.`,
+        { reply_markup: channelsKeyboard([channel]) },
+      );
+    } catch (error) {
+      await renderMenu(context, backendErrorMessage(error), {
+        reply_markup: mainMenuKeyboard(),
+      });
+    }
+  });
+
   bot.on('message:text', async (context, next) => {
     const userId = telegramUserId(context);
     const editDraft = userId ? channelEditDrafts.get(userId) : undefined;
@@ -158,7 +189,7 @@ export function registerChannelHandlers(
     if (!/^-?[1-9]\d*$/.test(telegramChatId)) {
       await renderMenu(
         context,
-        'ID канала должен быть целым числом, например -1001234567890.',
+        'Выберите канал кнопкой «Добавить канал». Для старых клиентов можно отправить числовой ID вида -1001234567890.',
       );
       return;
     }
@@ -185,7 +216,7 @@ export function registerChannelHandlers(
   });
 }
 
-async function showChannels(
+export async function showChannels(
   context: Context,
   backend: BackendClient,
 ): Promise<void> {

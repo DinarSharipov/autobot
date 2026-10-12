@@ -95,7 +95,7 @@ export function registerScheduleHandlers(
   });
 }
 
-async function showSchedules(
+export async function showSchedules(
   context: Context,
   backend: BackendClient,
 ): Promise<void> {

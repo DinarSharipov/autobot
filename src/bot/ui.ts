@@ -1,7 +1,7 @@
-import { type Context, type InlineKeyboard } from 'grammy';
+import { type Context, type InlineKeyboard, type Keyboard } from 'grammy';
 
 type MenuOptions = {
-  reply_markup?: InlineKeyboard;
+  reply_markup?: InlineKeyboard | Keyboard;
 };
 
 const lastMenuByChatId = new Map<string, number>();
@@ -12,9 +12,12 @@ export async function renderMenu(
   options: MenuOptions = {},
 ): Promise<void> {
   const callbackMessage = context.callbackQuery?.message;
-  if (callbackMessage) {
+  if (callbackMessage && isInlineKeyboard(options.reply_markup)) {
     try {
-      await context.editMessageText(text, options);
+      const replyMarkup = options.reply_markup;
+      const editOptions =
+        replyMarkup === undefined ? {} : { reply_markup: replyMarkup };
+      await context.editMessageText(text, editOptions);
       rememberMenu(context);
       return;
     } catch (error) {
@@ -30,9 +33,15 @@ export async function renderMenu(
 
   const key = String(chatId);
   const previousMessageId = lastMenuByChatId.get(key);
-  if (previousMessageId !== undefined) {
+  const callbackMessageId = callbackMessage?.message_id;
+  const messageIds = new Set(
+    [previousMessageId, callbackMessageId].filter(
+      (messageId): messageId is number => messageId !== undefined,
+    ),
+  );
+  for (const messageId of messageIds) {
     try {
-      await context.api.deleteMessage(chatId, previousMessageId);
+      await context.api.deleteMessage(chatId, messageId);
     } catch {
       // The message may already have been deleted by the user or Telegram.
     }
@@ -54,4 +63,10 @@ function isMessageNotModified(error: unknown): boolean {
   return (
     error instanceof Error && /message is not modified/i.test(error.message)
   );
+}
+
+function isInlineKeyboard(
+  markup: MenuOptions['reply_markup'],
+): markup is InlineKeyboard | undefined {
+  return markup === undefined || 'inline_keyboard' in markup;
 }
