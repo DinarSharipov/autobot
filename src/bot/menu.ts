@@ -40,7 +40,8 @@ export function mainReplyKeyboard(): Keyboard {
       request_title: true,
       request_username: true,
     })
-    .resized();
+    .resized()
+    .persistent();
 }
 
 export async function showMainMenu(context: Context): Promise<void> {

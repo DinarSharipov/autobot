@@ -1,4 +1,4 @@
-import { Bot } from 'grammy';
+import { Bot, type Context } from 'grammy';
 
 import { BackendClient } from './backend/client.js';
 import { clearChannelDrafts, registerChannelHandlers } from './bot/channels.js';
@@ -34,15 +34,36 @@ const backend = new BackendClient({
   secret: environment.botServiceActiveSecret,
 });
 
+const MAIN_NAVIGATION_TEXTS = new Set([
+  'Темы',
+  'Каналы',
+  'Посты',
+  'Модерация',
+  'Расписание',
+  'Подписка и лимиты',
+  'Главное меню',
+]);
+
+function clearConversationDrafts(context: Context): void {
+  const userId = telegramUserId(context);
+  if (!userId) {
+    return;
+  }
+
+  clearChannelDrafts(userId);
+  clearModerationDrafts(userId);
+  clearPostDrafts(userId);
+  clearTopicDrafts(userId);
+}
+
 registerStartHandler(bot, backend);
-registerSubscriptionHandlers(bot, backend);
-registerChannelHandlers(bot, backend);
-registerPostHandlers(bot, backend);
-registerModerationHandlers(bot, backend);
-registerScheduleHandlers(bot, backend);
-registerTopicHandlers(bot, backend);
 bot.on('message:text', async (context, next) => {
-  switch (context.message.text.trim()) {
+  const text = context.message.text.trim();
+  if (MAIN_NAVIGATION_TEXTS.has(text)) {
+    clearConversationDrafts(context);
+  }
+
+  switch (text) {
     case 'Темы':
       await showTopics(context, backend);
       return;
@@ -68,14 +89,14 @@ bot.on('message:text', async (context, next) => {
       await next();
   }
 });
+registerSubscriptionHandlers(bot, backend);
+registerChannelHandlers(bot, backend);
+registerPostHandlers(bot, backend);
+registerModerationHandlers(bot, backend);
+registerScheduleHandlers(bot, backend);
+registerTopicHandlers(bot, backend);
 bot.command('cancel', async (context) => {
-  const userId = telegramUserId(context);
-  if (userId) {
-    clearChannelDrafts(userId);
-    clearModerationDrafts(userId);
-    clearPostDrafts(userId);
-    clearTopicDrafts(userId);
-  }
+  clearConversationDrafts(context);
   await renderMenu(context, 'Текущий сценарий отменён.', {
     reply_markup: mainReplyKeyboard(),
   });
