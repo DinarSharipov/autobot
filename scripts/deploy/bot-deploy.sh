@@ -12,6 +12,21 @@ if [[ ! -s .env.next ]]; then
 fi
 
 chmod 600 .env.next
+
+if [[ ! -s .env ]]; then
+  echo 'Existing production .env is required to preserve server-side HMAC credentials' >&2
+  exit 1
+fi
+
+for name in BOT_SERVICE_ACTIVE_KEY_ID BOT_SERVICE_ACTIVE_SECRET; do
+  value="$(awk -F= -v key="$name" '$1 == key { value = substr($0, index($0, "=") + 1) } END { print value }' .env)"
+  if [[ -z "$value" ]]; then
+    echo "Existing production .env is missing $name" >&2
+    exit 1
+  fi
+  printf '%s=%s\n' "$name" "$value" >> .env.next
+done
+
 docker compose -p autobot-bot -f compose.yaml -f compose.prod.yaml \
   --env-file .env.next config --quiet
 

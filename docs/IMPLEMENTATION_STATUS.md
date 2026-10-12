@@ -23,6 +23,7 @@ Local quality gates, GitHub Actions, production image publication, and SSH deplo
 - [x] `SERVER_PORT` copied from local `.env` to the GitHub `production` environment
 - [x] `SERVER_USER` copied from local `.env` to the GitHub `production` environment
 - [x] `SERVER_PASSWORD` and `TELEGRAM_TOKEN` copied from local `.env` to GitHub secrets
+- [x] HMAC credentials kept server-side and preserved during bot deploy
 - [x] Password-based SSH deployment configured; a dedicated key remains a future hardening option
 - [x] Verified `SERVER_KNOWN_HOSTS` configured in the GitHub `production` environment
 - [x] GitHub Actions workflow implementation

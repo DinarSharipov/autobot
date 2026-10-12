@@ -21,8 +21,6 @@ Environment secrets:
 - `SERVER_KNOWN_HOSTS`
 - either `SERVER_SSH_KEY` or `SERVER_PASSWORD`
 - `TELEGRAM_TOKEN`
-- `BOT_SERVICE_ACTIVE_KEY_ID`
-- `BOT_SERVICE_ACTIVE_SECRET`
 
 Environment variables:
 
@@ -30,10 +28,11 @@ Environment variables:
 - `LOG_LEVEL=info`
 
 Never commit these values. The deployment workflow renders a temporary
-production environment file, transfers it with mode `0600`, and does not copy
-server credentials into the container. The two `BOT_SERVICE_*` secrets must
-match the active HMAC key configured in `autobot-backend`; they are independent
-from `TELEGRAM_TOKEN`.
+production environment file, transfers it with mode `0600`, and preserves the
+existing server-side `BOT_SERVICE_ACTIVE_KEY_ID` and
+`BOT_SERVICE_ACTIVE_SECRET` from `/opt/autobot/bot/.env`. They must match the
+active HMAC key configured in `autobot-backend`; they are independent from
+`TELEGRAM_TOKEN` and are intentionally not duplicated in GitHub.
 
 ## Workflow
 

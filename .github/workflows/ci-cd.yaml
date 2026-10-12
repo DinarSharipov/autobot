@@ -112,8 +112,6 @@ jobs:
       SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
       SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
       TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-      BOT_SERVICE_ACTIVE_KEY_ID: ${{ secrets.BOT_SERVICE_ACTIVE_KEY_ID }}
-      BOT_SERVICE_ACTIVE_SECRET: ${{ secrets.BOT_SERVICE_ACTIVE_SECRET }}
       BACKEND_URL: ${{ vars.BACKEND_URL }}
       LOG_LEVEL: ${{ vars.LOG_LEVEL }}
       GHCR_USER: ${{ github.actor }}
