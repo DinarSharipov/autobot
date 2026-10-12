@@ -131,7 +131,7 @@ jobs:
         run: node scripts/ci/render-production-env.mjs "$PRODUCTION_ENV_FILE"
 
       - name: Install password SSH fallback
-        if: env.SERVER_SSH_KEY == '' && env.SERVER_PASSWORD != ''
+        if: env.SERVER_PASSWORD != ''
         run: sudo apt-get update && sudo apt-get install --yes sshpass
 
       - name: Deploy immutable image

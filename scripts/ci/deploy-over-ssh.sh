@@ -49,18 +49,18 @@ scp_options=(
 ssh_prefix=()
 scp_prefix=()
 
-if [[ -n "${SERVER_SSH_KEY:-}" ]]; then
-  key_file="$RUNNER_TEMP/autobot-bot-deploy-key"
-  printf '%s\n' "$SERVER_SSH_KEY" > "$key_file"
-  chmod 600 "$key_file"
-  ssh_options+=(-i "$key_file")
-  scp_options+=(-i "$key_file")
-else
+if [[ -n "${SERVER_PASSWORD:-}" ]]; then
   export SSHPASS="$SERVER_PASSWORD"
   ssh_options[1]='BatchMode=no'
   scp_options[1]='BatchMode=no'
   ssh_prefix=(sshpass -e)
   scp_prefix=(sshpass -e)
+else
+  key_file="$RUNNER_TEMP/autobot-bot-deploy-key"
+  printf '%s\n' "$SERVER_SSH_KEY" > "$key_file"
+  chmod 600 "$key_file"
+  ssh_options+=(-i "$key_file")
+  scp_options+=(-i "$key_file")
 fi
 
 remote="$SERVER_USER@$SERVER_HOST"
