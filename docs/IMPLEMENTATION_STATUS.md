@@ -1,9 +1,9 @@
 # IMPLEMENTATION_STATUS.md
 
 ## Current status
-Minimal deployable grammY application initialized. It starts long polling but intentionally contains no product handlers, commands, callbacks, menus, or backend API calls yet.
+Minimal deployable grammY application initialized and deployed to production. It starts long polling but intentionally contains no product handlers, commands, callbacks, menus, or backend API calls yet.
 
-Local quality gates, production image build, and Compose validation pass. The production server is reachable but currently has no Autobot containers or `autobot-shared` network. The deployment script creates that external network idempotently and updates only `autobot-bot`.
+Local quality gates, GitHub Actions, production image publication, and SSH deployment pass. The `autobot-bot` container is running and healthy on the production server, and it is attached to the external `autobot-shared` network. The deployment updates only `autobot-bot`.
 
 ## Approved architecture
 - [x] Separate repository for Telegram bot
@@ -26,7 +26,7 @@ Local quality gates, production image build, and Compose validation pass. The pr
 - [x] Password-based SSH deployment configured; a dedicated key remains a future hardening option
 - [x] Verified `SERVER_KNOWN_HOSTS` configured in the GitHub `production` environment
 - [x] GitHub Actions workflow implementation
-- [ ] First deployment validation
+- [x] First deployment validation
 
 ## Product decisions captured
 - [x] Immediate one-time posts
