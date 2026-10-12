@@ -13,6 +13,7 @@ import { registerStartHandler } from './bot/start.js';
 import { mainMenuKeyboard, showMainMenu } from './bot/menu.js';
 import { registerSubscriptionHandlers } from './bot/subscription.js';
 import { telegramUserId } from './bot/common.js';
+import { renderMenu } from './bot/ui.js';
 import { parseEnvironment } from './config/environment.js';
 
 const environment = parseEnvironment(process.env);
@@ -38,7 +39,7 @@ bot.command('cancel', async (context) => {
     clearPostDrafts(userId);
     clearTopicDrafts(userId);
   }
-  await context.reply('Текущий сценарий отменён.', {
+  await renderMenu(context, 'Текущий сценарий отменён.', {
     reply_markup: mainMenuKeyboard(),
   });
 });

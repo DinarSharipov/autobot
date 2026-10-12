@@ -3,6 +3,7 @@ import { InlineKeyboard, type Bot, type Context } from 'grammy';
 import type { BackendClient, ModerationRequest } from '../backend/client.js';
 import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
 import { mainMenuKeyboard } from './menu.js';
+import { renderMenu } from './ui.js';
 
 type RevisionDraft = { requestId: string; version: number };
 const revisionDrafts = new Map<string, RevisionDraft>();
@@ -41,7 +42,10 @@ export function registerModerationHandlers(
     const version = Number(context.match[2]);
     if (!userId || !requestId || !Number.isSafeInteger(version)) return;
     revisionDrafts.set(userId, { requestId, version });
-    await context.reply('Опишите, что изменить в тексте (до 4000 символов).');
+    await renderMenu(
+      context,
+      'Опишите, что изменить в тексте (до 4000 символов).',
+    );
   });
 
   bot.on('message:text', async (context, next) => {
@@ -53,7 +57,8 @@ export function registerModerationHandlers(
     }
     const feedback = context.message.text.trim();
     if (!feedback || feedback.length > 4000) {
-      await context.reply(
+      await renderMenu(
+        context,
         'Комментарий должен содержать от 1 до 4000 символов.',
       );
       return;
@@ -67,14 +72,17 @@ export function registerModerationHandlers(
         feedback,
       );
       revisionDrafts.delete(userId);
-      await context.reply(
+      await renderMenu(
+        context,
         `Новая версия запрошена. Статус публикации: ${publication.status}.`,
         {
           reply_markup: mainMenuKeyboard(),
         },
       );
     } catch (error) {
-      await context.reply(backendErrorMessage(error));
+      await renderMenu(context, backendErrorMessage(error), {
+        reply_markup: mainMenuKeyboard(),
+      });
     }
   });
 }
@@ -87,31 +95,30 @@ async function showModeration(
     const userId = await resolveUser(context, backend);
     const requests = await backend.listModeration(userId);
     if (!requests.length) {
-      await context.reply('Постов, ожидающих модерации, нет.', {
+      await renderMenu(context, 'Постов, ожидающих модерации, нет.', {
         reply_markup: mainMenuKeyboard(),
       });
       return;
     }
+    const keyboard = new InlineKeyboard();
     for (const request of requests) {
-      await context.reply(formatRequest(request), {
-        reply_markup: new InlineKeyboard()
-          .text(
-            'Опубликовать',
-            `moderation:approve:${request.id}:${request.version}`,
-          )
-          .text(
-            'Правка',
-            `moderation:revision:${request.id}:${request.version}`,
-          )
-          .row()
-          .text(
-            'Отклонить',
-            `moderation:reject:${request.id}:${request.version}`,
-          ),
-      });
+      keyboard
+        .text(
+          'Опубликовать',
+          `moderation:approve:${request.id}:${request.version}`,
+        )
+        .text('Правка', `moderation:revision:${request.id}:${request.version}`)
+        .row()
+        .text('Отклонить', `moderation:reject:${request.id}:${request.version}`)
+        .row();
     }
+    await renderMenu(
+      context,
+      requests.map(formatRequest).join('\n\n').slice(0, 3900),
+      { reply_markup: keyboard },
+    );
   } catch (error) {
-    await context.reply(backendErrorMessage(error), {
+    await renderMenu(context, backendErrorMessage(error), {
       reply_markup: mainMenuKeyboard(),
     });
   }
@@ -133,14 +140,17 @@ async function decide(
       action === 'approve'
         ? await backend.approveModeration(userId, requestId, version)
         : await backend.rejectModeration(userId, requestId, version);
-    await context.reply(
+    await renderMenu(
+      context,
       action === 'approve'
         ? `Пост одобрен. Статус публикации: ${publication.status}.`
         : 'Пост отклонён и публикация отменена.',
       { reply_markup: mainMenuKeyboard() },
     );
   } catch (error) {
-    await context.reply(backendErrorMessage(error));
+    await renderMenu(context, backendErrorMessage(error), {
+      reply_markup: mainMenuKeyboard(),
+    });
   }
 }
 

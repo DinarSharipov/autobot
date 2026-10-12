@@ -3,6 +3,7 @@ import { type Bot, type Context } from 'grammy';
 import type { BackendClient, Schedule } from '../backend/client.js';
 import { backendErrorMessage, resolveUser } from './common.js';
 import { mainMenuKeyboard } from './menu.js';
+import { renderMenu } from './ui.js';
 
 function schedulesKeyboard(
   schedules: Schedule[],
@@ -60,14 +61,15 @@ export function registerScheduleHandlers(
           action === 'pause'
             ? await backend.pauseSchedule(userId, scheduleId, version)
             : await backend.resumeSchedule(userId, scheduleId, version);
-        await context.reply(
+        await renderMenu(
+          context,
           action === 'pause'
             ? 'Расписание приостановлено.'
             : 'Расписание возобновлено.',
           { reply_markup: schedulesKeyboard([schedule]) },
         );
       } catch (error) {
-        await context.reply(backendErrorMessage(error), {
+        await renderMenu(context, backendErrorMessage(error), {
           reply_markup: mainMenuKeyboard(),
         });
       }
@@ -82,11 +84,11 @@ export function registerScheduleHandlers(
     try {
       const userId = await resolveUser(context, backend);
       await backend.cancelSchedule(userId, scheduleId, version);
-      await context.reply('Расписание отменено.', {
+      await renderMenu(context, 'Расписание отменено.', {
         reply_markup: mainMenuKeyboard(),
       });
     } catch (error) {
-      await context.reply(backendErrorMessage(error), {
+      await renderMenu(context, backendErrorMessage(error), {
         reply_markup: mainMenuKeyboard(),
       });
     }
@@ -103,9 +105,11 @@ async function showSchedules(
     const text = schedules.length
       ? ['Ваше расписание:', '', ...schedules.map(formatSchedule)].join('\n')
       : 'Запланированных публикаций нет.';
-    await context.reply(text, { reply_markup: schedulesKeyboard(schedules) });
+    await renderMenu(context, text, {
+      reply_markup: schedulesKeyboard(schedules),
+    });
   } catch (error) {
-    await context.reply(backendErrorMessage(error), {
+    await renderMenu(context, backendErrorMessage(error), {
       reply_markup: mainMenuKeyboard(),
     });
   }

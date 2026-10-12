@@ -3,6 +3,7 @@ import { InlineKeyboard, type Bot, type Context } from 'grammy';
 import type { BackendClient, Post, Topic } from '../backend/client.js';
 import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
 import { mainMenuKeyboard } from './menu.js';
+import { renderMenu } from './ui.js';
 
 type PostDraft = {
   channelId: string;
@@ -64,7 +65,8 @@ export function registerPostHandlers(
     if (!userId || !channelId) return;
     const draft = drafts.get(userId);
     if (!draft) {
-      await context.reply(
+      await renderMenu(
+        context,
         'Сценарий создания поста устарел. Начните заново через /createpost.',
       );
       return;
@@ -76,7 +78,9 @@ export function registerPostHandlers(
       const topics = await backend.listTopics(resolvedUserId);
       await askTopic(context, topics);
     } catch (error) {
-      await context.reply(backendErrorMessage(error));
+      await renderMenu(context, backendErrorMessage(error), {
+        reply_markup: mainMenuKeyboard(),
+      });
     }
   });
 
@@ -89,7 +93,8 @@ export function registerPostHandlers(
     if (!draft) return;
     draft.topicId = topicId === 'none' ? null : topicId;
     draft.phase = 'prompt';
-    await context.reply(
+    await renderMenu(
+      context,
       'Опишите, какой текст нужно подготовить для публикации.',
     );
   });
@@ -102,7 +107,7 @@ export function registerPostHandlers(
     if (!draft) return;
     draft.publicationMode = context.match[1] as Post['publicationMode'];
     draft.phase = 'image';
-    await context.reply('Добавлять изображение к публикации?', {
+    await renderMenu(context, 'Добавлять изображение к публикации?', {
       reply_markup: new InlineKeyboard()
         .text('Да', 'posts:image:yes')
         .text('Нет', 'posts:image:no'),
@@ -125,7 +130,8 @@ export function registerPostHandlers(
         publicationMode: draft.publicationMode,
       });
       drafts.delete(userId);
-      await context.reply(
+      await renderMenu(
+        context,
         `Пост создан (версия ${post.version}). Что сделать дальше?`,
         {
           reply_markup: new InlineKeyboard()
@@ -140,7 +146,9 @@ export function registerPostHandlers(
         },
       );
     } catch (error) {
-      await context.reply(backendErrorMessage(error));
+      await renderMenu(context, backendErrorMessage(error), {
+        reply_markup: mainMenuKeyboard(),
+      });
     }
   });
 
@@ -152,14 +160,17 @@ export function registerPostHandlers(
     try {
       const userId = await resolveUser(context, backend);
       const publication = await backend.publishPost(userId, postId, version);
-      await context.reply(
+      await renderMenu(
+        context,
         `Публикация запущена. Статус: ${publication.status}.`,
         {
           reply_markup: mainMenuKeyboard(),
         },
       );
     } catch (error) {
-      await context.reply(backendErrorMessage(error));
+      await renderMenu(context, backendErrorMessage(error), {
+        reply_markup: mainMenuKeyboard(),
+      });
     }
   });
 
@@ -177,9 +188,9 @@ export function registerPostHandlers(
       const text = versions.length
         ? `История версий:\n\n${details.join('\n\n')}`.slice(0, 3900)
         : 'Версий пока нет.';
-      await context.reply(text, { reply_markup: mainMenuKeyboard() });
+      await renderMenu(context, text, { reply_markup: mainMenuKeyboard() });
     } catch (error) {
-      await context.reply(backendErrorMessage(error), {
+      await renderMenu(context, backendErrorMessage(error), {
         reply_markup: mainMenuKeyboard(),
       });
     }
@@ -192,7 +203,10 @@ export function registerPostHandlers(
     const version = Number(context.match[2]);
     if (!userId || !postId || !Number.isSafeInteger(version)) return;
     postEditDrafts.set(userId, { postId, version });
-    await context.reply('Отправьте новый prompt поста (до 20 000 символов).');
+    await renderMenu(
+      context,
+      'Отправьте новый prompt поста (до 20 000 символов).',
+    );
   });
 
   bot.callbackQuery(/^posts:archive:([^:]+):(\d+)$/, async (context) => {
@@ -203,11 +217,11 @@ export function registerPostHandlers(
     try {
       const userId = await resolveUser(context, backend);
       await backend.archivePost(userId, postId, version);
-      await context.reply('Пост отправлен в архив.', {
+      await renderMenu(context, 'Пост отправлен в архив.', {
         reply_markup: mainMenuKeyboard(),
       });
     } catch (error) {
-      await context.reply(backendErrorMessage(error), {
+      await renderMenu(context, backendErrorMessage(error), {
         reply_markup: mainMenuKeyboard(),
       });
     }
@@ -219,7 +233,8 @@ export function registerPostHandlers(
     const postId = context.match[1];
     if (!userId || !postId) return;
     drafts.set(userId, { channelId: '', phase: 'schedule', postId });
-    await context.reply(
+    await renderMenu(
+      context,
       'Отправьте дату и время в ISO 8601 с часовым поясом, например 2026-10-15T18:00:00+03:00.',
     );
   });
@@ -231,7 +246,10 @@ export function registerPostHandlers(
     if (userId && editDraft) {
       const prompt = context.message.text.trim();
       if (!prompt || prompt.length > 20_000) {
-        await context.reply('Prompt должен содержать от 1 до 20 000 символов.');
+        await renderMenu(
+          context,
+          'Prompt должен содержать от 1 до 20 000 символов.',
+        );
         return;
       }
       try {
@@ -243,11 +261,13 @@ export function registerPostHandlers(
           { prompt },
         );
         postEditDrafts.delete(userId);
-        await context.reply('Prompt поста обновлён.', {
+        await renderMenu(context, 'Prompt поста обновлён.', {
           reply_markup: mainMenuKeyboard(),
         });
       } catch (error) {
-        await context.reply(backendErrorMessage(error));
+        await renderMenu(context, backendErrorMessage(error), {
+          reply_markup: mainMenuKeyboard(),
+        });
       }
       return;
     }
@@ -259,14 +279,15 @@ export function registerPostHandlers(
     const value = context.message.text.trim();
     if (draft.phase === 'prompt') {
       if (!value || value.length > 20_000) {
-        await context.reply(
+        await renderMenu(
+          context,
           'Текст запроса должен содержать от 1 до 20 000 символов.',
         );
         return;
       }
       draft.prompt = value;
       draft.phase = 'mode';
-      await context.reply('Выберите режим публикации:', {
+      await renderMenu(context, 'Выберите режим публикации:', {
         reply_markup: new InlineKeyboard()
           .text('Автоматически', 'posts:mode:AUTO')
           .row()
@@ -281,13 +302,14 @@ export function registerPostHandlers(
         Number.isNaN(runAt.getTime()) ||
         !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value)
       ) {
-        await context.reply(
+        await renderMenu(
+          context,
           'Укажите корректную дату ISO 8601 с часовым поясом.',
         );
         return;
       }
       if (runAt.getTime() <= Date.now()) {
-        await context.reply('Дата публикации должна быть в будущем.');
+        await renderMenu(context, 'Дата публикации должна быть в будущем.');
         return;
       }
       try {
@@ -298,14 +320,17 @@ export function registerPostHandlers(
           timezone: 'Europe/Moscow',
         });
         drafts.delete(userId);
-        await context.reply(
+        await renderMenu(
+          context,
           `Публикация запланирована на ${schedule.runAt ?? value}.`,
           {
             reply_markup: mainMenuKeyboard(),
           },
         );
       } catch (error) {
-        await context.reply(backendErrorMessage(error));
+        await renderMenu(context, backendErrorMessage(error), {
+          reply_markup: mainMenuKeyboard(),
+        });
       }
     }
   });
@@ -317,7 +342,7 @@ async function beginPost(
 ): Promise<void> {
   const userId = telegramUserId(context);
   if (!userId) {
-    await context.reply('Не удалось определить пользователя Telegram.');
+    await renderMenu(context, 'Не удалось определить пользователя Telegram.');
     return;
   }
   try {
@@ -326,7 +351,8 @@ async function beginPost(
       (channel) => channel.status === 'ACTIVE',
     );
     if (!channels.length) {
-      await context.reply(
+      await renderMenu(
+        context,
         'Сначала добавьте активный канал через раздел «Каналы».',
         {
           reply_markup: mainMenuKeyboard(),
@@ -339,9 +365,9 @@ async function beginPost(
     for (const channel of channels) {
       keyboard.text(channel.title, `posts:channel:${channel.id}`).row();
     }
-    await context.reply('Выберите канал:', { reply_markup: keyboard });
+    await renderMenu(context, 'Выберите канал:', { reply_markup: keyboard });
   } catch (error) {
-    await context.reply(backendErrorMessage(error), {
+    await renderMenu(context, backendErrorMessage(error), {
       reply_markup: mainMenuKeyboard(),
     });
   }
@@ -354,7 +380,7 @@ async function askTopic(context: Context, topics: Topic[]): Promise<void> {
   for (const topic of topics) {
     keyboard.text(topic.name, `posts:topic:${topic.id}`).row();
   }
-  await context.reply('Выберите тему или продолжите без темы:', {
+  await renderMenu(context, 'Выберите тему или продолжите без темы:', {
     reply_markup: keyboard,
   });
 }
@@ -369,9 +395,9 @@ async function showPosts(
     const text = posts.length
       ? ['Ваши посты:', '', ...posts.map(formatPost)].join('\n')
       : 'Постов пока нет.';
-    await context.reply(text, { reply_markup: postsKeyboard(posts) });
+    await renderMenu(context, text, { reply_markup: postsKeyboard(posts) });
   } catch (error) {
-    await context.reply(backendErrorMessage(error), {
+    await renderMenu(context, backendErrorMessage(error), {
       reply_markup: mainMenuKeyboard(),
     });
   }

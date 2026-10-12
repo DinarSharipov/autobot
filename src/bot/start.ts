@@ -2,7 +2,8 @@ import type { Bot, Context } from 'grammy';
 
 import type { BackendClient } from '../backend/client.js';
 import { backendErrorMessage, resolveUser } from './common.js';
-import { showMainMenu } from './menu.js';
+import { mainMenuKeyboard } from './menu.js';
+import { renderMenu } from './ui.js';
 
 export function registerStartHandler(
   bot: Bot<Context>,
@@ -11,16 +12,17 @@ export function registerStartHandler(
   bot.command('start', async (context) => {
     try {
       await resolveUser(context, backend);
-      await context.reply(
+      await renderMenu(
+        context,
         [
           'Добро пожаловать в Autobot!',
           '',
           'Создавайте и планируйте публикации для Telegram-каналов.',
         ].join('\n'),
+        { reply_markup: mainMenuKeyboard() },
       );
-      await showMainMenu(context);
     } catch (error) {
-      await context.reply(backendErrorMessage(error));
+      await renderMenu(context, backendErrorMessage(error));
     }
   });
 }

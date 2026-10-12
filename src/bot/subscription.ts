@@ -3,6 +3,7 @@ import { InlineKeyboard, type Bot, type Context } from 'grammy';
 import type { BackendClient, Usage } from '../backend/client.js';
 import { backendErrorMessage, resolveUser } from './common.js';
 import { mainMenuKeyboard } from './menu.js';
+import { renderMenu } from './ui.js';
 
 function formatLimit(value: number | null): string {
   return value === null ? 'без ограничений' : String(value);
@@ -56,11 +57,11 @@ async function showSubscription(
       `Модерация: ${entitlements.moderationEnabled ? 'доступна' : 'недоступна'}`,
     ].join('\n');
 
-    await context.reply(text, {
+    await renderMenu(context, text, {
       reply_markup: new InlineKeyboard().text('В меню', 'menu:home'),
     });
   } catch (error) {
-    await context.reply(backendErrorMessage(error), {
+    await renderMenu(context, backendErrorMessage(error), {
       reply_markup: mainMenuKeyboard(),
     });
   }

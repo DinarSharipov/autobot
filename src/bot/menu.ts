@@ -1,5 +1,7 @@
 import { InlineKeyboard, type Context } from 'grammy';
 
+import { renderMenu } from './ui.js';
+
 export const MENU_TEXT = 'Выберите раздел:';
 
 export function mainMenuKeyboard(): InlineKeyboard {
@@ -18,5 +20,5 @@ export function mainMenuKeyboard(): InlineKeyboard {
 }
 
 export async function showMainMenu(context: Context): Promise<void> {
-  await context.reply(MENU_TEXT, { reply_markup: mainMenuKeyboard() });
+  await renderMenu(context, MENU_TEXT, { reply_markup: mainMenuKeyboard() });
 }

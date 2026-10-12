@@ -3,6 +3,7 @@ import { InlineKeyboard, type Bot, type Context } from 'grammy';
 import type { BackendClient, Channel } from '../backend/client.js';
 import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
 import { mainMenuKeyboard } from './menu.js';
+import { renderMenu } from './ui.js';
 
 const channelDrafts = new Set<string>();
 const channelEditDrafts = new Map<
@@ -51,11 +52,12 @@ export function registerChannelHandlers(
     await context.answerCallbackQuery();
     const userId = telegramUserId(context);
     if (!userId) {
-      await context.reply('Не удалось определить пользователя Telegram.');
+      await renderMenu(context, 'Не удалось определить пользователя Telegram.');
       return;
     }
     channelDrafts.add(userId);
-    await context.reply(
+    await renderMenu(
+      context,
       'Отправьте числовой ID канала (например, -1001234567890). Бот должен быть администратором канала.',
     );
   });
@@ -67,14 +69,15 @@ export function registerChannelHandlers(
     try {
       const userId = await resolveUser(context, backend);
       const channel = await backend.verifyChannel(userId, channelId);
-      await context.reply(
+      await renderMenu(
+        context,
         `Канал «${channel.title}» проверен: ${channel.status}.`,
         {
           reply_markup: channelsKeyboard([channel]),
         },
       );
     } catch (error) {
-      await context.reply(backendErrorMessage(error), {
+      await renderMenu(context, backendErrorMessage(error), {
         reply_markup: mainMenuKeyboard(),
       });
     }
@@ -87,7 +90,10 @@ export function registerChannelHandlers(
     const version = Number(context.match[2]);
     if (!userId || !channelId || !Number.isSafeInteger(version)) return;
     channelEditDrafts.set(userId, { channelId, version });
-    await context.reply('Отправьте новое название канала (до 255 символов).');
+    await renderMenu(
+      context,
+      'Отправьте новое название канала (до 255 символов).',
+    );
   });
 
   bot.callbackQuery(/^channels:archive:([^:]+):(\d+)$/, async (context) => {
@@ -98,11 +104,11 @@ export function registerChannelHandlers(
     try {
       const userId = await resolveUser(context, backend);
       await backend.archiveChannel(userId, channelId, version);
-      await context.reply('Канал отправлен в архив.', {
+      await renderMenu(context, 'Канал отправлен в архив.', {
         reply_markup: mainMenuKeyboard(),
       });
     } catch (error) {
-      await context.reply(backendErrorMessage(error), {
+      await renderMenu(context, backendErrorMessage(error), {
         reply_markup: mainMenuKeyboard(),
       });
     }
@@ -114,7 +120,10 @@ export function registerChannelHandlers(
     if (userId && editDraft) {
       const title = context.message.text.trim();
       if (!title || title.length > 255) {
-        await context.reply('Название должно содержать от 1 до 255 символов.');
+        await renderMenu(
+          context,
+          'Название должно содержать от 1 до 255 символов.',
+        );
         return;
       }
       try {
@@ -126,11 +135,17 @@ export function registerChannelHandlers(
           title,
         );
         channelEditDrafts.delete(userId);
-        await context.reply(`Название канала изменено на «${channel.title}».`, {
+        await renderMenu(
+          context,
+          `Название канала изменено на «${channel.title}».`,
+          {
+            reply_markup: mainMenuKeyboard(),
+          },
+        );
+      } catch (error) {
+        await renderMenu(context, backendErrorMessage(error), {
           reply_markup: mainMenuKeyboard(),
         });
-      } catch (error) {
-        await context.reply(backendErrorMessage(error));
       }
       return;
     }
@@ -141,7 +156,8 @@ export function registerChannelHandlers(
 
     const telegramChatId = context.message.text.trim();
     if (!/^-?[1-9]\d*$/.test(telegramChatId)) {
-      await context.reply(
+      await renderMenu(
+        context,
         'ID канала должен быть целым числом, например -1001234567890.',
       );
       return;
@@ -154,14 +170,17 @@ export function registerChannelHandlers(
         telegramChatId,
       );
       channelDrafts.delete(userId);
-      await context.reply(
+      await renderMenu(
+        context,
         `Канал «${channel.title}» добавлен со статусом ${channel.status}.`,
         {
           reply_markup: channelsKeyboard([channel]),
         },
       );
     } catch (error) {
-      await context.reply(backendErrorMessage(error));
+      await renderMenu(context, backendErrorMessage(error), {
+        reply_markup: mainMenuKeyboard(),
+      });
     }
   });
 }
@@ -176,9 +195,11 @@ async function showChannels(
     const text = channels.length
       ? ['Ваши каналы:', '', ...channels.map(formatChannel)].join('\n')
       : 'Каналов пока нет. Добавьте канал, где бот является администратором.';
-    await context.reply(text, { reply_markup: channelsKeyboard(channels) });
+    await renderMenu(context, text, {
+      reply_markup: channelsKeyboard(channels),
+    });
   } catch (error) {
-    await context.reply(backendErrorMessage(error), {
+    await renderMenu(context, backendErrorMessage(error), {
       reply_markup: mainMenuKeyboard(),
     });
   }
