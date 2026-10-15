@@ -24,8 +24,9 @@ bot HMAC credentials in `autobot-backend`; they must never be committed.
 The production backend URL defaults to `http://autobot-api:3000`. Both services
 must join the external Docker network `autobot-shared`.
 
-Set `WEB_ADMIN_URL` to the public URL of the standalone Web Admin to show an
-optional entry button in the bot’s main menu.
+Web Admin development and deployment are postponed. Leave `WEB_ADMIN_URL` empty; when a
+standalone Web Admin is introduced later, setting it to its public URL will show an optional entry
+button in the bot’s main menu.
 
 ## Validation
 

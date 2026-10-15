@@ -6,14 +6,17 @@ navigation, channel/topic/post management, one-time and recurring scheduling, mo
 subscription/usage display, safe backend retry policy, and an optional Web Admin entry point.
 These changes have not been deployed yet.
 
+Web Admin development and deployment are postponed. The bot is the only active client; leave
+`WEB_ADMIN_URL` unset until a standalone Web Admin is implemented and deployed.
+
 Local quality gates pass. The historical production-deployment statement below has not been
 re-verified after the current worktree changes.
 
 ## Approved architecture
 - [x] Separate repository for Telegram bot
 - [x] Backend in `DinarSharipov/autobot-backend`
-- [x] Web Admin in `DinarSharipov/autobot-web`
-- [x] Web Admin will run on a separate future server
+- [ ] Web Admin implementation and deployment (postponed)
+- [ ] Web Admin activation on a separate server (postponed)
 - [x] Node.js + TypeScript + grammY
 - [x] Bot/backend communication over internal Docker network
 - [x] Shared Docker network: `autobot-shared`
@@ -55,7 +58,7 @@ re-verified after the current worktree changes.
 - [x] One-time and recurring scheduling UI
 - [x] Moderation/revision UI
 - [x] Subscription/usage UI
-- [x] Optional Web Admin entry link
+- [x] Optional Web Admin entry link (disabled until Web Admin is available)
 - [x] Docker runtime
 - [x] CI/CD workflow
 - [x] No automated tests by project decision

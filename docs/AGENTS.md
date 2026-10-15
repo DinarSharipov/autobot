@@ -39,7 +39,8 @@ Use:
 BACKEND_URL=http://autobot-api:3000
 ```
 
-The Web Admin is deployed separately and does not participate in `autobot-shared`.
+Web Admin development and deployment are postponed. If it is introduced later, it will be deployed
+separately and will not participate in `autobot-shared`.
 
 ## Bot responsibilities
 - /start and onboarding
@@ -52,7 +53,7 @@ The Web Admin is deployed separately and does not participate in `autobot-shared
 - Subscription/usage information UI
 - Display backend validation and entitlement errors
 - Send notifications to users
-- Provide links to the standalone Web Admin where useful
+- Do not implement or activate Web Admin links while the Web Admin is postponed.
 
 ## Core product rules
 Supported post modes:
@@ -72,9 +73,9 @@ Subscription capabilities are enforced by the backend, not by grammY handlers. L
 
 ## Client strategy
 - Telegram Mini App / Telegram Web App is NOT part of the product plan.
-- Standalone Web Admin is implemented in `DinarSharipov/autobot-web`.
-- Web Admin uses the same backend API and user/domain model as the bot.
-- Web Admin will be deployed to a different server in the future.
+- A standalone Web Admin may later be implemented in `DinarSharipov/autobot-web`.
+- Any future Web Admin must use the same backend API and user/domain model as the bot.
+- Any future Web Admin will be deployed to a different server.
 
 ## Engineering rules
 - Do not write or add tests for this project.

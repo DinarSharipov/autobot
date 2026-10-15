@@ -3,6 +3,11 @@
 ## Goal
 Build the grammY Telegram client for Autobot while keeping all domain logic in `autobot-backend` and interoperating with the standalone `autobot-web` client.
 
+> **Current product scope:** development and deployment of the Web Admin are postponed. The
+> Telegram bot is the only active client. Keep the backend contract ready for a future Web Admin,
+> but do not add Web Admin features, deployment work, or browser authentication tasks until the
+> product decision is revised.
+
 ## Planned implementation
 
 ### 1. Bootstrap
@@ -46,10 +51,10 @@ Moderation state must be persisted by the backend so changes made from Web Admin
 
 ### 5. Web Admin coexistence
 - Do not implement Telegram Mini App / Web App.
-- Do not implement Web Admin in this repository.
-- Web Admin lives in `DinarSharipov/autobot-web`.
+- Do not implement or deploy Web Admin at this stage.
+- `DinarSharipov/autobot-web` remains a future separate repository.
 - Keep bot flows independent from browser UI.
-- [x] Allow links to the standalone Web Admin where useful.
+- Keep the optional Web Admin link disabled until the Web Admin is implemented and deployed.
 
 ### 6. Infrastructure
 - Run as container `autobot-bot`.
