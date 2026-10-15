@@ -1,72 +1,42 @@
-import { InlineKeyboard, type Bot, type Context } from 'grammy';
+import { topicsKeyboard } from './views/topics.js';
+import { renderBackendError } from './errors.js';
+import type { BotContext } from './context.js';
+import { Composer } from 'grammy';
 
-import type { BackendClient, Topic } from '../backend/client.js';
-import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
-import { mainMenuKeyboard } from './menu.js';
-import { renderMenu } from './ui.js';
+import type { BackendClient } from '../backend/client.js';
+import { resolveUser, telegramUserId } from './common.js';
+import { renderPage } from './ui.js';
+import { truncate } from './format.js';
+import { createDraftStore } from './drafts.js';
 
 type TopicDraft = {
   name: string;
   phase: 'name' | 'prompt';
-  startedAt: number;
 };
 
-const draftByTelegramUserId = new Map<string, TopicDraft>();
-const editDraftByTelegramUserId = new Map<
-  string,
-  { topicId: string; version: number }
->();
-const DRAFT_TTL_MS = 15 * 60 * 1000;
+const draftByTelegramUserId = createDraftStore<TopicDraft>();
+const editDraftByTelegramUserId = createDraftStore<{
+  topicId: string;
+  version: number;
+}>();
 
-export function clearTopicDrafts(userId: string): void {
-  draftByTelegramUserId.delete(userId);
-  editDraftByTelegramUserId.delete(userId);
-}
-
-function topicsKeyboard(topics: Topic[] = []): InlineKeyboard {
-  const keyboard = new InlineKeyboard().text('Создать тему', 'topics:create');
-  for (const topic of topics) {
-    keyboard
-      .row()
-      .text(
-        `Изменить: ${topic.name}`,
-        `topics:edit:${topic.id}:${topic.version}`,
-      )
-      .text('Архив', `topics:archive:${topic.id}:${topic.version}`);
-  }
-  return keyboard.row().text('В меню', 'menu:home');
-}
-
-export function registerTopicHandlers(
-  bot: Bot<Context>,
+export function createTopicFeature(
   backend: BackendClient,
-): void {
-  bot.command('topics', async (context) => {
-    await showTopics(context, backend);
-  });
-
-  bot.callbackQuery('menu:topics', async (context) => {
-    await context.answerCallbackQuery();
-    await showTopics(context, backend);
-  });
-
+): Composer<BotContext> {
+  const bot = new Composer<BotContext>();
   bot.callbackQuery('topics:create', async (context) => {
     await context.answerCallbackQuery();
     const userId = telegramUserId(context);
     if (!userId) {
-      await renderMenu(context, 'Не удалось определить пользователя Telegram.');
+      await renderPage(context, context.t('error-telegram-user'));
       return;
     }
 
     draftByTelegramUserId.set(userId, {
       name: '',
       phase: 'name',
-      startedAt: Date.now(),
     });
-    await renderMenu(
-      context,
-      'Введите название темы. Чтобы отменить создание, используйте /cancel.',
-    );
+    await renderPage(context, context.t('topics-ask-name'));
   });
 
   bot.callbackQuery(/^topics:edit:([^:]+):(\d+)$/, async (context) => {
@@ -76,10 +46,7 @@ export function registerTopicHandlers(
     const version = Number(context.match[2]);
     if (!userId || !topicId || !Number.isSafeInteger(version)) return;
     editDraftByTelegramUserId.set(userId, { topicId, version });
-    await renderMenu(
-      context,
-      'Отправьте новую инструкцию темы (до 20 000 символов).',
-    );
+    await renderPage(context, context.t('topics-ask-edit-prompt'));
   });
 
   bot.callbackQuery(/^topics:archive:([^:]+):(\d+)$/, async (context) => {
@@ -90,13 +57,9 @@ export function registerTopicHandlers(
     try {
       const userId = await resolveUser(context, backend);
       await backend.archiveTopic(userId, topicId, version);
-      await renderMenu(context, 'Тема отправлена в архив.', {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderPage(context, context.t('topics-archived'));
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -111,10 +74,7 @@ export function registerTopicHandlers(
     if (editDraft) {
       const promptTemplate = context.message.text.trim();
       if (!promptTemplate || promptTemplate.length > 20_000) {
-        await renderMenu(
-          context,
-          'Инструкция должна содержать от 1 до 20 000 символов.',
-        );
+        await renderPage(context, context.t('validation-topic-prompt'));
         return;
       }
       try {
@@ -126,17 +86,12 @@ export function registerTopicHandlers(
           promptTemplate,
         );
         editDraftByTelegramUserId.delete(userId);
-        await renderMenu(
+        await renderPage(
           context,
-          `Инструкция темы «${topic.name}» обновлена.`,
-          {
-            reply_markup: mainMenuKeyboard(),
-          },
+          context.t('topics-updated', { name: topic.name }),
         );
       } catch (error) {
-        await renderMenu(context, backendErrorMessage(error), {
-          reply_markup: mainMenuKeyboard(),
-        });
+        await renderBackendError(context, error);
       }
       return;
     }
@@ -146,27 +101,16 @@ export function registerTopicHandlers(
       await next();
       return;
     }
-    if (Date.now() - draft.startedAt > DRAFT_TTL_MS) {
-      draftByTelegramUserId.delete(userId);
-      await renderMenu(
-        context,
-        'Время создания темы истекло. Начните заново через раздел «Темы».',
-      );
-      return;
-    }
 
     const value = context.message.text.trim();
     if (!value) {
-      await renderMenu(context, 'Введите текстовое значение.');
+      await renderPage(context, context.t('validation-text'));
       return;
     }
 
     if (draft.phase === 'name') {
       if (value.length > 255) {
-        await renderMenu(
-          context,
-          'Название должно содержать не более 255 символов.',
-        );
+        await renderPage(context, context.t('validation-name-length'));
         return;
       }
       draftByTelegramUserId.set(userId, {
@@ -174,18 +118,12 @@ export function registerTopicHandlers(
         name: value,
         phase: 'prompt',
       });
-      await renderMenu(
-        context,
-        'Теперь отправьте инструкцию для генерации постов по этой теме.',
-      );
+      await renderPage(context, context.t('topics-ask-prompt'));
       return;
     }
 
     if (value.length > 20_000) {
-      await renderMenu(
-        context,
-        'Инструкция должна содержать не более 20 000 символов.',
-      );
+      await renderPage(context, context.t('validation-instructions-length'));
       return;
     }
 
@@ -196,19 +134,22 @@ export function registerTopicHandlers(
         promptTemplate: value,
       });
       draftByTelegramUserId.delete(userId);
-      await renderMenu(context, `Тема «${topic.name}» создана.`, {
-        reply_markup: topicsKeyboard([topic]),
-      });
+      await renderPage(
+        context,
+        context.t('topics-created', { name: topic.name }),
+        {
+          reply_markup: topicsKeyboard(context, [topic]),
+        },
+      );
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
+  return bot;
 }
 
 export async function showTopics(
-  context: Context,
+  context: BotContext,
   backend: BackendClient,
 ): Promise<void> {
   try {
@@ -216,18 +157,17 @@ export async function showTopics(
     const topics = await backend.listTopics(userId);
     const text = topics.length
       ? [
-          'Ваши темы:',
+          context.t('topics-heading'),
           '',
-          ...topics.map(
-            (topic) =>
-              `• ${topic.name.length > 80 ? `${topic.name.slice(0, 79)}…` : topic.name}`,
+          ...topics.map((topic) =>
+            context.t('topics-item', { name: truncate(topic.name, 80) }),
           ),
         ].join('\n')
-      : 'У вас пока нет тем. Создайте первую — она будет содержать инструкцию для генерации постов.';
-    await renderMenu(context, text, { reply_markup: topicsKeyboard(topics) });
-  } catch (error) {
-    await renderMenu(context, backendErrorMessage(error), {
-      reply_markup: mainMenuKeyboard(),
+      : context.t('topics-empty');
+    await renderPage(context, text, {
+      reply_markup: topicsKeyboard(context, topics),
     });
+  } catch (error) {
+    await renderBackendError(context, error);
   }
 }

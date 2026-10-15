@@ -1,43 +1,22 @@
-import { InlineKeyboard, type Bot, type Context } from 'grammy';
+import { channelsKeyboard, formatChannel } from './views/channels.js';
+import { renderBackendError, backendErrorMessage } from './errors.js';
+import type { BotContext } from './context.js';
+import { InlineKeyboard, Composer } from 'grammy';
 
 import {
   BackendApiError,
   type BackendClient,
   type Channel,
 } from '../backend/client.js';
-import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
-import { channelAddLink, mainMenuKeyboard } from './menu.js';
-import { renderMenu } from './ui.js';
+import { resolveUser, telegramUserId } from './common.js';
+import { statusLabel } from './format.js';
+import { renderPage } from './ui.js';
+import { createDraftStore } from './drafts.js';
 
-const channelEditDrafts = new Map<
-  string,
-  { channelId: string; version: number }
->();
-export function clearChannelEditDraft(userId: string): void {
-  channelEditDrafts.delete(userId);
-}
-
-export function channelsKeyboard(channels: Channel[]): InlineKeyboard {
-  const keyboard = new InlineKeyboard().url(
-    'Подключить канал',
-    channelAddLink(),
-  );
-  for (const channel of channels) {
-    keyboard
-      .row()
-      .text(
-        `Изменить: ${channel.title}`,
-        `channels:edit:${channel.id}:${channel.version}`,
-      )
-      .text('Архив', `channels:archive:${channel.id}:${channel.version}`);
-    if (channel.status !== 'ACTIVE') {
-      keyboard
-        .row()
-        .text(`Проверить: ${channel.title}`, `channels:verify:${channel.id}`);
-    }
-  }
-  return keyboard.row().text('В меню', 'menu:home');
-}
+const channelEditDrafts = createDraftStore<{
+  channelId: string;
+  version: number;
+}>();
 
 async function createOrGetChannel(
   backend: BackendClient,
@@ -63,7 +42,7 @@ async function createOrGetChannel(
 }
 
 async function notifyUser(
-  context: Context,
+  context: BotContext,
   userId: number,
   text: string,
   replyMarkup?: InlineKeyboard,
@@ -77,19 +56,10 @@ async function notifyUser(
   }
 }
 
-export function registerChannelHandlers(
-  bot: Bot<Context>,
+export function createChannelFeature(
   backend: BackendClient,
-): void {
-  bot.command('channels', async (context) => {
-    await showChannels(context, backend);
-  });
-
-  bot.callbackQuery('menu:channels', async (context) => {
-    await context.answerCallbackQuery();
-    await showChannels(context, backend);
-  });
-
+): Composer<BotContext> {
+  const bot = new Composer<BotContext>();
   bot.callbackQuery(/^channels:verify:(.+)$/, async (context) => {
     await context.answerCallbackQuery();
     const channelId = context.match[1];
@@ -97,17 +67,18 @@ export function registerChannelHandlers(
     try {
       const userId = await resolveUser(context, backend);
       const channel = await backend.verifyChannel(userId, channelId);
-      await renderMenu(
+      await renderPage(
         context,
-        `Канал «${channel.title}» проверен: ${channel.status}.`,
+        context.t('channels-verified', {
+          title: channel.title,
+          status: statusLabel(context, channel.status),
+        }),
         {
-          reply_markup: channelsKeyboard([channel]),
+          reply_markup: channelsKeyboard(context, [channel]),
         },
       );
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -118,10 +89,7 @@ export function registerChannelHandlers(
     const version = Number(context.match[2]);
     if (!userId || !channelId || !Number.isSafeInteger(version)) return;
     channelEditDrafts.set(userId, { channelId, version });
-    await renderMenu(
-      context,
-      'Отправьте новое название канала (до 255 символов).',
-    );
+    await renderPage(context, context.t('channels-ask-title'));
   });
 
   bot.callbackQuery(/^channels:archive:([^:]+):(\d+)$/, async (context) => {
@@ -132,13 +100,9 @@ export function registerChannelHandlers(
     try {
       const userId = await resolveUser(context, backend);
       await backend.archiveChannel(userId, channelId, version);
-      await renderMenu(context, 'Канал отправлен в архив.', {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderPage(context, context.t('channels-archived'));
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -163,11 +127,18 @@ export function registerChannelHandlers(
       await notifyUser(
         context,
         update.from.id,
-        `Канал «${channel.title}» подключён со статусом ${channel.status}.`,
-        channelsKeyboard([channel]),
+        context.t('channels-connected', {
+          title: channel.title,
+          status: statusLabel(context, channel.status),
+        }),
+        new InlineKeyboard().text(context.t('channels-open'), 'menu:channels'),
       );
     } catch (error) {
-      await notifyUser(context, update.from.id, backendErrorMessage(error));
+      await notifyUser(
+        context,
+        update.from.id,
+        backendErrorMessage(context, error),
+      );
     }
   });
 
@@ -185,15 +156,16 @@ export function registerChannelHandlers(
         userId,
         String(origin.chat.id),
       );
-      await renderMenu(
+      await renderPage(
         context,
-        `Канал «${channel.title}» подключён со статусом ${channel.status}.`,
-        { reply_markup: channelsKeyboard([channel]) },
+        context.t('channels-connected', {
+          title: channel.title,
+          status: statusLabel(context, channel.status),
+        }),
+        { reply_markup: channelsKeyboard(context, [channel]) },
       );
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -203,10 +175,7 @@ export function registerChannelHandlers(
     if (userId && editDraft) {
       const title = context.message.text.trim();
       if (!title || title.length > 255) {
-        await renderMenu(
-          context,
-          'Название должно содержать от 1 до 255 символов.',
-        );
+        await renderPage(context, context.t('validation-title'));
         return;
       }
       try {
@@ -218,50 +187,39 @@ export function registerChannelHandlers(
           title,
         );
         channelEditDrafts.delete(userId);
-        await renderMenu(
+        await renderPage(
           context,
-          `Название канала изменено на «${channel.title}».`,
-          {
-            reply_markup: mainMenuKeyboard(),
-          },
+          context.t('channels-renamed', { title: channel.title }),
         );
       } catch (error) {
-        await renderMenu(context, backendErrorMessage(error), {
-          reply_markup: mainMenuKeyboard(),
-        });
+        await renderBackendError(context, error);
       }
       return;
     }
 
     await next();
   });
+  return bot;
 }
 
 export async function showChannels(
-  context: Context,
+  context: BotContext,
   backend: BackendClient,
 ): Promise<void> {
   try {
     const userId = await resolveUser(context, backend);
     const channels = await backend.listChannels(userId);
     const text = channels.length
-      ? ['Ваши каналы:', '', ...channels.map(formatChannel)].join('\n')
-      : 'Каналов пока нет. Нажмите «Подключить канал» и добавьте бота администратором с правом публикации сообщений.';
-    await renderMenu(context, text, {
-      reply_markup: channelsKeyboard(channels),
+      ? [
+          context.t('channels-heading'),
+          '',
+          ...channels.map((item) => formatChannel(context, item)),
+        ].join('\n')
+      : context.t('channels-empty');
+    await renderPage(context, text, {
+      reply_markup: channelsKeyboard(context, channels),
     });
   } catch (error) {
-    await renderMenu(context, backendErrorMessage(error), {
-      reply_markup: mainMenuKeyboard(),
-    });
+    await renderBackendError(context, error);
   }
-}
-
-function formatChannel(channel: Channel): string {
-  const username = channel.username ? ` @${channel.username}` : '';
-  const title =
-    channel.title.length > 80
-      ? `${channel.title.slice(0, 79)}…`
-      : channel.title;
-  return `• ${title}${username} — ${channel.status}`;
 }

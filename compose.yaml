@@ -12,6 +12,7 @@ services:
       BOT_SERVICE_ACTIVE_KEY_ID: ${BOT_SERVICE_ACTIVE_KEY_ID:-}
       BOT_SERVICE_ACTIVE_SECRET: ${BOT_SERVICE_ACTIVE_SECRET:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      WEB_ADMIN_URL: ${WEB_ADMIN_URL:-}
       BUILD_SHA: ${BUILD_SHA:-development}
     networks:
       - autobot-shared

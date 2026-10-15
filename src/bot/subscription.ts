@@ -1,39 +1,32 @@
-import { InlineKeyboard, type Bot, type Context } from 'grammy';
-
+import { renderBackendError } from './errors.js';
+import type { BotContext } from './context.js';
 import type { BackendClient, Usage } from '../backend/client.js';
-import { backendErrorMessage, resolveUser } from './common.js';
-import { mainMenuKeyboard } from './menu.js';
-import { renderMenu } from './ui.js';
+import { resolveUser } from './common.js';
+import { formatNumber, statusLabel } from './format.js';
+import { renderPage } from './ui.js';
 
-function formatLimit(value: number | null): string {
-  return value === null ? 'без ограничений' : String(value);
+function formatLimit(context: BotContext, value: number | null): string {
+  return value === null
+    ? context.t('usage-unlimited')
+    : formatNumber(context, value);
 }
 
 function usageByMetric(
+  context: BotContext,
   usage: Usage,
   metric: Usage['items'][number]['metric'],
 ): string {
   const item = usage.items.find((candidate) => candidate.metric === metric);
-  if (!item) return 'нет данных';
-  return `${item.committed + item.reserved} из ${formatLimit(item.limit)}`;
-}
-
-export function registerSubscriptionHandlers(
-  bot: Bot<Context>,
-  backend: BackendClient,
-): void {
-  bot.command('subscription', async (context) => {
-    await showSubscription(context, backend);
-  });
-
-  bot.callbackQuery('menu:subscription', async (context) => {
-    await context.answerCallbackQuery();
-    await showSubscription(context, backend);
-  });
+  return item
+    ? context.t('usage-ratio', {
+        used: formatNumber(context, item.committed + item.reserved),
+        limit: formatLimit(context, item.limit),
+      })
+    : context.t('usage-no-data');
 }
 
 export async function showSubscription(
-  context: Context,
+  context: BotContext,
   backend: BackendClient,
 ): Promise<void> {
   try {
@@ -43,26 +36,29 @@ export async function showSubscription(
       backend.getUsage(userId),
     ]);
     const entitlements = subscription.entitlements;
-    const text = [
-      `Тариф: ${subscription.planName}`,
-      `Статус: ${subscription.status}`,
-      '',
-      `Каналы: ${formatLimit(entitlements.channelLimit)}`,
-      `Темы: ${formatLimit(entitlements.topicLimit)}`,
-      `Генерации текста: ${usageByMetric(usage, 'TEXT_GENERATION')}`,
-      `Генерации изображений: ${usageByMetric(usage, 'IMAGE_GENERATION')}`,
-      `Правки на модерации: ${usageByMetric(usage, 'MODERATION_REVISION')}`,
-      '',
-      `Изображения: ${entitlements.imageGenerationEnabled ? 'доступны' : 'недоступны'}`,
-      `Модерация: ${entitlements.moderationEnabled ? 'доступна' : 'недоступна'}`,
-    ].join('\n');
-
-    await renderMenu(context, text, {
-      reply_markup: new InlineKeyboard().text('В меню', 'menu:home'),
-    });
+    await renderPage(
+      context,
+      context.t('subscription-page', {
+        plan: subscription.planName,
+        status: statusLabel(context, subscription.status),
+        channels: formatLimit(context, entitlements.channelLimit),
+        topics: formatLimit(context, entitlements.topicLimit),
+        textUsage: usageByMetric(context, usage, 'TEXT_GENERATION'),
+        imageUsage: usageByMetric(context, usage, 'IMAGE_GENERATION'),
+        revisionUsage: usageByMetric(context, usage, 'MODERATION_REVISION'),
+        images: context.t(
+          entitlements.imageGenerationEnabled
+            ? 'availability-enabled'
+            : 'availability-disabled',
+        ),
+        moderation: context.t(
+          entitlements.moderationEnabled
+            ? 'availability-enabled'
+            : 'availability-disabled',
+        ),
+      }),
+    );
   } catch (error) {
-    await renderMenu(context, backendErrorMessage(error), {
-      reply_markup: mainMenuKeyboard(),
-    });
+    await renderBackendError(context, error);
   }
 }

@@ -1,56 +1,20 @@
-import { InlineKeyboard, Keyboard, type Context } from 'grammy';
+import type { BotContext } from './context.js';
+import { InlineKeyboard } from 'grammy';
 
-import { renderMenu } from './ui.js';
+import { renderPage } from './ui.js';
 
-export const MENU_TEXT = 'Выберите раздел:';
-
-let telegramBotUsername: string | undefined;
-
-export function configureTelegramBotUsername(username: string): void {
-  telegramBotUsername = username;
-}
-
-export function channelAddLink(): string {
-  if (!telegramBotUsername) {
-    throw new Error('Telegram bot username is not configured');
+export async function showMainMenu(
+  context: BotContext,
+  webAdminUrl: string | undefined,
+): Promise<void> {
+  const keyboard = new InlineKeyboard().text(
+    context.t('action-create-post'),
+    'posts:create',
+  );
+  if (webAdminUrl) {
+    keyboard.row().url(context.t('action-open-web-admin'), webAdminUrl);
   }
-
-  return `https://t.me/${telegramBotUsername}?startchannel&admin=post_messages`;
-}
-
-export function mainMenuKeyboard(): InlineKeyboard {
-  return new InlineKeyboard()
-    .text('Темы', 'menu:topics')
-    .row()
-    .text('Каналы', 'menu:channels')
-    .row()
-    .text('Посты', 'menu:posts')
-    .row()
-    .text('Модерация', 'menu:moderation')
-    .row()
-    .text('Расписание', 'menu:schedules')
-    .row()
-    .text('Подписка и лимиты', 'menu:subscription');
-}
-
-export function mainReplyKeyboard(): Keyboard {
-  return new Keyboard()
-    .text('Темы')
-    .text('Каналы')
-    .row()
-    .text('Посты')
-    .text('Модерация')
-    .row()
-    .text('Расписание')
-    .text('Подписка и лимиты')
-    .row()
-    .text('Главное меню')
-    .resized()
-    .persistent();
-}
-
-export async function showMainMenu(context: Context): Promise<void> {
-  await renderMenu(context, MENU_TEXT, {
-    reply_markup: mainReplyKeyboard(),
+  await renderPage(context, context.t('home-page'), {
+    reply_markup: keyboard,
   });
 }

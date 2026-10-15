@@ -1,30 +1,18 @@
-import type { Bot, Context } from 'grammy';
+import { renderBackendError } from './errors.js';
+import type { BotContext } from './context.js';
 
 import type { BackendClient } from '../backend/client.js';
-import { backendErrorMessage, resolveUser } from './common.js';
-import { mainReplyKeyboard } from './menu.js';
-import { renderMenu } from './ui.js';
+import { resolveUser } from './common.js';
+import { renderPage } from './ui.js';
 
-export function registerStartHandler(
-  bot: Bot<Context>,
+export async function showStart(
+  context: BotContext,
   backend: BackendClient,
-): void {
-  bot.command('start', async (context) => {
-    try {
-      await resolveUser(context, backend);
-      await renderMenu(
-        context,
-        [
-          'Добро пожаловать в Autobot!',
-          '',
-          'Создавайте и планируйте публикации для Telegram-каналов.',
-        ].join('\n'),
-        { reply_markup: mainReplyKeyboard() },
-      );
-    } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainReplyKeyboard(),
-      });
-    }
-  });
+): Promise<void> {
+  try {
+    await resolveUser(context, backend);
+    await renderPage(context, context.t('start-page'));
+  } catch (error) {
+    await renderBackendError(context, error);
+  }
 }

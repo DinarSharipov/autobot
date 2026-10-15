@@ -33,12 +33,23 @@ if (!['http:', 'https:'].includes(parsedBackendUrl.protocol)) {
   throw new Error('BACKEND_URL must use HTTP or HTTPS');
 }
 
+const webAdminUrl = safeValue('WEB_ADMIN_URL', '');
+
+if (webAdminUrl) {
+  const parsedWebAdminUrl = new URL(webAdminUrl);
+
+  if (parsedWebAdminUrl.protocol !== 'https:') {
+    throw new Error('WEB_ADMIN_URL must use HTTPS');
+  }
+}
+
 const values = {
   AUTOBOT_BOT_IMAGE: required('AUTOBOT_BOT_IMAGE'),
   BACKEND_URL: backendUrl,
   BUILD_SHA: required('BUILD_SHA'),
   LOG_LEVEL: safeValue('LOG_LEVEL', 'info'),
   TELEGRAM_TOKEN: required('TELEGRAM_TOKEN'),
+  WEB_ADMIN_URL: webAdminUrl,
 };
 
 const content = `${Object.entries(values)

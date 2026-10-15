@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate localization catalogs
+        run: npm run locales:check
+
       - name: Validate formatting
         run: npm run format:check
 
@@ -114,6 +117,7 @@ jobs:
       TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
       BACKEND_URL: ${{ vars.BACKEND_URL }}
       LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+      WEB_ADMIN_URL: ${{ vars.WEB_ADMIN_URL }}
       GHCR_USER: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       AUTOBOT_BOT_IMAGE: ${{ needs.container.outputs.image }}

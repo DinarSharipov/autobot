@@ -15,7 +15,7 @@ Build the grammY Telegram client for Autobot while keeping all domain logic in `
 ### 2. Backend integration
 - [x] Create a typed HTTP client with HMAC service authentication.
 - Configure `BACKEND_URL=http://autobot-api:3000`.
-- Add request timeout/retry policy where safe.
+- [x] Add request timeout/retry policy where safe.
 - Map backend validation/domain errors to clear Telegram messages.
 - Treat the NestJS API as the single source of business rules shared with Web Admin.
 
@@ -27,7 +27,7 @@ Implement UI flows for:
 - [x] posts
 - [x] immediate one-time publication
 - [x] scheduled one-time publication
-- recurring publication
+- [x] recurring publication
 - [x] moderation and approval
 - [x] revision requests
 - subscription/usage status
@@ -49,7 +49,7 @@ Moderation state must be persisted by the backend so changes made from Web Admin
 - Do not implement Web Admin in this repository.
 - Web Admin lives in `DinarSharipov/autobot-web`.
 - Keep bot flows independent from browser UI.
-- Allow links to the standalone Web Admin where useful.
+- [x] Allow links to the standalone Web Admin where useful.
 
 ### 6. Infrastructure
 - Run as container `autobot-bot`.

@@ -1,61 +1,41 @@
-import { InlineKeyboard, type Bot, type Context } from 'grammy';
+import { postsKeyboard, askTopic, formatPost } from './views/posts.js';
+import { renderBackendError } from './errors.js';
+import type { BotContext } from './context.js';
+import { InlineKeyboard, Composer } from 'grammy';
 
-import type { BackendClient, Post, Topic } from '../backend/client.js';
-import { backendErrorMessage, resolveUser, telegramUserId } from './common.js';
-import { mainMenuKeyboard } from './menu.js';
-import { renderMenu } from './ui.js';
+import type { BackendClient, Post } from '../backend/client.js';
+import { resolveUser, telegramUserId } from './common.js';
+import { renderPage } from './ui.js';
+import {
+  formatDate,
+  statusLabel,
+  truncate,
+  PUBLICATION_TIMEZONE,
+} from './format.js';
+import { createDraftStore } from './drafts.js';
 
-type PostDraft = {
-  channelId: string;
-  phase: 'image' | 'mode' | 'prompt' | 'schedule' | 'topic';
-  postId?: string;
-  prompt?: string;
-  publicationMode?: Post['publicationMode'];
-  topicId?: string | null;
-};
+type PostTarget = { channelId: string; topicId: string | null };
+type PostContent = PostTarget & { prompt: string };
+type PostDraft =
+  | { phase: 'channel' }
+  | { phase: 'topic'; channelId: string }
+  | ({ phase: 'prompt' } & PostTarget)
+  | ({ phase: 'mode' } & PostContent)
+  | ({ phase: 'image'; publicationMode: Post['publicationMode'] } & PostContent)
+  | { phase: 'schedule-kind'; postId: string }
+  | { phase: 'schedule-once'; postId: string }
+  | { phase: 'schedule-recurring'; postId: string };
 
-const drafts = new Map<string, PostDraft>();
-const postEditDrafts = new Map<string, { postId: string; version: number }>();
+const drafts = createDraftStore<PostDraft>();
+const postEditDrafts = createDraftStore<{ postId: string; version: number }>();
 
-export function clearPostDrafts(userId: string): void {
-  drafts.delete(userId);
-  postEditDrafts.delete(userId);
-}
-
-function postsKeyboard(posts: Post[]): InlineKeyboard {
-  const keyboard = new InlineKeyboard().text('Создать пост', 'posts:create');
-  for (const post of posts) {
-    keyboard
-      .row()
-      .text('Опубликовать', `posts:publish:${post.id}:${post.version}`)
-      .text('Версии', `posts:versions:${post.id}`)
-      .row()
-      .text('Изменить prompt', `posts:edit:${post.id}:${post.version}`)
-      .text('Архив', `posts:archive:${post.id}:${post.version}`);
-  }
-  return keyboard.row().text('В меню', 'menu:home');
-}
-
-export function registerPostHandlers(
-  bot: Bot<Context>,
+export function createPostFeature(
   backend: BackendClient,
-): void {
-  bot.command('posts', async (context) => {
-    await showPosts(context, backend);
-  });
-
-  bot.command('createpost', async (context) => {
-    await beginPost(context, backend);
-  });
-
-  bot.callbackQuery('menu:posts', async (context) => {
-    await context.answerCallbackQuery();
-    await showPosts(context, backend);
-  });
-
+): Composer<BotContext> {
+  const bot = new Composer<BotContext>();
   bot.callbackQuery('posts:create', async (context) => {
     await context.answerCallbackQuery();
-    await beginPost(context, backend);
+    await showCreatePost(context, backend);
   });
 
   bot.callbackQuery(/^posts:channel:(.+)$/, async (context) => {
@@ -64,23 +44,17 @@ export function registerPostHandlers(
     const channelId = context.match[1];
     if (!userId || !channelId) return;
     const draft = drafts.get(userId);
-    if (!draft) {
-      await renderMenu(
-        context,
-        'Сценарий создания поста устарел. Начните заново через /createpost.',
-      );
+    if (draft?.phase !== 'channel') {
+      await renderPage(context, context.t('posts-flow-expired'));
       return;
     }
-    draft.channelId = channelId;
-    draft.phase = 'topic';
     try {
       const resolvedUserId = await resolveUser(context, backend);
       const topics = await backend.listTopics(resolvedUserId);
+      drafts.set(userId, { phase: 'topic', channelId });
       await askTopic(context, topics);
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -90,13 +64,16 @@ export function registerPostHandlers(
     const topicId = context.match[1];
     if (!userId || !topicId) return;
     const draft = drafts.get(userId);
-    if (!draft) return;
-    draft.topicId = topicId === 'none' ? null : topicId;
-    draft.phase = 'prompt';
-    await renderMenu(
-      context,
-      'Опишите, какой текст нужно подготовить для публикации.',
-    );
+    if (draft?.phase !== 'topic') {
+      await renderPage(context, context.t('posts-flow-expired'));
+      return;
+    }
+    drafts.set(userId, {
+      phase: 'prompt',
+      channelId: draft.channelId,
+      topicId: topicId === 'none' ? null : topicId,
+    });
+    await renderPage(context, context.t('posts-ask-prompt'));
   });
 
   bot.callbackQuery(/^posts:mode:(AUTO|MODERATION)$/, async (context) => {
@@ -104,13 +81,19 @@ export function registerPostHandlers(
     const userId = telegramUserId(context);
     if (!userId) return;
     const draft = drafts.get(userId);
-    if (!draft) return;
-    draft.publicationMode = context.match[1] as Post['publicationMode'];
-    draft.phase = 'image';
-    await renderMenu(context, 'Добавлять изображение к публикации?', {
+    if (draft?.phase !== 'mode') {
+      await renderPage(context, context.t('posts-flow-expired'));
+      return;
+    }
+    drafts.set(userId, {
+      ...draft,
+      phase: 'image',
+      publicationMode: context.match[1] === 'AUTO' ? 'AUTO' : 'MODERATION',
+    });
+    await renderPage(context, context.t('posts-ask-image'), {
       reply_markup: new InlineKeyboard()
-        .text('Да', 'posts:image:yes')
-        .text('Нет', 'posts:image:no'),
+        .text(context.t('action-yes'), 'posts:image:yes')
+        .text(context.t('action-no'), 'posts:image:no'),
     });
   });
 
@@ -119,7 +102,10 @@ export function registerPostHandlers(
     const userId = telegramUserId(context);
     if (!userId) return;
     const draft = drafts.get(userId);
-    if (!draft?.prompt || !draft.publicationMode) return;
+    if (draft?.phase !== 'image') {
+      await renderPage(context, context.t('posts-flow-expired'));
+      return;
+    }
     try {
       const resolvedUserId = await resolveUser(context, backend);
       const post = await backend.createPost(resolvedUserId, {
@@ -130,25 +116,23 @@ export function registerPostHandlers(
         publicationMode: draft.publicationMode,
       });
       drafts.delete(userId);
-      await renderMenu(
+      await renderPage(
         context,
-        `Пост создан (версия ${post.version}). Что сделать дальше?`,
+        context.t('posts-created', { version: post.version }),
         {
           reply_markup: new InlineKeyboard()
             .text(
-              'Опубликовать сейчас',
+              context.t('action-publish-now'),
               `posts:publish:${post.id}:${post.version}`,
             )
             .row()
-            .text('Запланировать', `posts:schedule:${post.id}`)
+            .text(context.t('action-schedule'), `posts:schedule:${post.id}`)
             .row()
-            .text('В меню', 'menu:home'),
+            .text(context.t('action-home'), 'menu:home'),
         },
       );
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -160,17 +144,14 @@ export function registerPostHandlers(
     try {
       const userId = await resolveUser(context, backend);
       const publication = await backend.publishPost(userId, postId, version);
-      await renderMenu(
+      await renderPage(
         context,
-        `Публикация запущена. Статус: ${publication.status}.`,
-        {
-          reply_markup: mainMenuKeyboard(),
-        },
+        context.t('posts-publication-started', {
+          status: statusLabel(context, publication.status),
+        }),
       );
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -182,17 +163,21 @@ export function registerPostHandlers(
       const userId = await resolveUser(context, backend);
       const versions = await backend.listPostVersions(userId, postId);
       const details = versions.map((version) => {
-        const content = version.text || 'Текст ещё не сгенерирован.';
-        return `• #${version.sequence} — ${version.status}\n${content.slice(0, 500)}`;
+        const content = version.text || context.t('posts-text-pending');
+        return context.t('posts-version-item', {
+          version: version.sequence,
+          status: statusLabel(context, version.status),
+          text: truncate(content, 500),
+        });
       });
       const text = versions.length
-        ? `История версий:\n\n${details.join('\n\n')}`.slice(0, 3900)
-        : 'Версий пока нет.';
-      await renderMenu(context, text, { reply_markup: mainMenuKeyboard() });
+        ? context
+            .t('posts-versions-heading', { versions: details.join('\n\n') })
+            .slice(0, 3900)
+        : context.t('posts-versions-empty');
+      await renderPage(context, text);
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -203,10 +188,7 @@ export function registerPostHandlers(
     const version = Number(context.match[2]);
     if (!userId || !postId || !Number.isSafeInteger(version)) return;
     postEditDrafts.set(userId, { postId, version });
-    await renderMenu(
-      context,
-      'Отправьте новый prompt поста (до 20 000 символов).',
-    );
+    await renderPage(context, context.t('posts-ask-edit-prompt'));
   });
 
   bot.callbackQuery(/^posts:archive:([^:]+):(\d+)$/, async (context) => {
@@ -217,13 +199,9 @@ export function registerPostHandlers(
     try {
       const userId = await resolveUser(context, backend);
       await backend.archivePost(userId, postId, version);
-      await renderMenu(context, 'Пост отправлен в архив.', {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderPage(context, context.t('posts-archived'));
     } catch (error) {
-      await renderMenu(context, backendErrorMessage(error), {
-        reply_markup: mainMenuKeyboard(),
-      });
+      await renderBackendError(context, error);
     }
   });
 
@@ -232,12 +210,40 @@ export function registerPostHandlers(
     const userId = telegramUserId(context);
     const postId = context.match[1];
     if (!userId || !postId) return;
-    drafts.set(userId, { channelId: '', phase: 'schedule', postId });
-    await renderMenu(
-      context,
-      'Отправьте дату и время в ISO 8601 с часовым поясом, например 2026-10-15T18:00:00+03:00.',
-    );
+    drafts.set(userId, { phase: 'schedule-kind', postId });
+    await renderPage(context, context.t('posts-ask-schedule-kind'), {
+      reply_markup: new InlineKeyboard()
+        .text(context.t('action-schedule-once'), 'posts:schedule-kind:once')
+        .row()
+        .text(
+          context.t('action-schedule-recurring'),
+          'posts:schedule-kind:recurring',
+        ),
+    });
   });
+
+  bot.callbackQuery(
+    /^posts:schedule-kind:(once|recurring)$/,
+    async (context) => {
+      await context.answerCallbackQuery();
+      const userId = telegramUserId(context);
+      if (!userId) return;
+      const draft = drafts.get(userId);
+      if (draft?.phase !== 'schedule-kind') {
+        await renderPage(context, context.t('posts-flow-expired'));
+        return;
+      }
+      const isRecurring = context.match[1] === 'recurring';
+      drafts.set(userId, {
+        phase: isRecurring ? 'schedule-recurring' : 'schedule-once',
+        postId: draft.postId,
+      });
+      await renderPage(
+        context,
+        context.t(isRecurring ? 'posts-ask-rrule' : 'posts-ask-date'),
+      );
+    },
+  );
 
   bot.on('message:text', async (context, next) => {
     const userId = telegramUserId(context);
@@ -246,10 +252,7 @@ export function registerPostHandlers(
     if (userId && editDraft) {
       const prompt = context.message.text.trim();
       if (!prompt || prompt.length > 20_000) {
-        await renderMenu(
-          context,
-          'Prompt должен содержать от 1 до 20 000 символов.',
-        );
+        await renderPage(context, context.t('validation-prompt'));
         return;
       }
       try {
@@ -261,13 +264,9 @@ export function registerPostHandlers(
           { prompt },
         );
         postEditDrafts.delete(userId);
-        await renderMenu(context, 'Prompt поста обновлён.', {
-          reply_markup: mainMenuKeyboard(),
-        });
+        await renderPage(context, context.t('posts-prompt-updated'));
       } catch (error) {
-        await renderMenu(context, backendErrorMessage(error), {
-          reply_markup: mainMenuKeyboard(),
-        });
+        await renderBackendError(context, error);
       }
       return;
     }
@@ -279,70 +278,96 @@ export function registerPostHandlers(
     const value = context.message.text.trim();
     if (draft.phase === 'prompt') {
       if (!value || value.length > 20_000) {
-        await renderMenu(
-          context,
-          'Текст запроса должен содержать от 1 до 20 000 символов.',
-        );
+        await renderPage(context, context.t('validation-post-request'));
         return;
       }
-      draft.prompt = value;
-      draft.phase = 'mode';
-      await renderMenu(context, 'Выберите режим публикации:', {
+      drafts.set(userId, { ...draft, prompt: value, phase: 'mode' });
+      await renderPage(context, context.t('posts-ask-mode'), {
         reply_markup: new InlineKeyboard()
-          .text('Автоматически', 'posts:mode:AUTO')
+          .text(context.t('mode-auto'), 'posts:mode:AUTO')
           .row()
-          .text('Через модерацию', 'posts:mode:MODERATION'),
+          .text(context.t('mode-moderation'), 'posts:mode:MODERATION'),
       });
       return;
     }
 
-    if (draft.phase === 'schedule') {
+    if (draft.phase === 'schedule-once') {
       const runAt = new Date(value);
       if (
         Number.isNaN(runAt.getTime()) ||
         !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value)
       ) {
-        await renderMenu(
-          context,
-          'Укажите корректную дату ISO 8601 с часовым поясом.',
-        );
+        await renderPage(context, context.t('validation-date'));
         return;
       }
       if (runAt.getTime() <= Date.now()) {
-        await renderMenu(context, 'Дата публикации должна быть в будущем.');
+        await renderPage(context, context.t('validation-date-future'));
         return;
       }
       try {
         const resolvedUserId = await resolveUser(context, backend);
         const schedule = await backend.createOneTimeSchedule(resolvedUserId, {
-          postId: draft.postId!,
+          postId: draft.postId,
           runAt: value,
-          timezone: 'Europe/Moscow',
+          timezone: PUBLICATION_TIMEZONE,
         });
         drafts.delete(userId);
-        await renderMenu(
+        await renderPage(
           context,
-          `Публикация запланирована на ${schedule.runAt ?? value}.`,
-          {
-            reply_markup: mainMenuKeyboard(),
-          },
+          context.t('posts-scheduled', {
+            date: formatDate(context, schedule.runAt ?? value),
+          }),
         );
       } catch (error) {
-        await renderMenu(context, backendErrorMessage(error), {
-          reply_markup: mainMenuKeyboard(),
+        await renderBackendError(context, error);
+      }
+    }
+
+    if (draft.phase === 'schedule-recurring') {
+      const rrule = value.toUpperCase();
+      if (!isSupportedRrule(rrule)) {
+        await renderPage(context, context.t('validation-rrule'));
+        return;
+      }
+      try {
+        const resolvedUserId = await resolveUser(context, backend);
+        const schedule = await backend.createRecurringSchedule(resolvedUserId, {
+          postId: draft.postId,
+          rrule,
+          timezone: PUBLICATION_TIMEZONE,
         });
+        drafts.delete(userId);
+        await renderPage(
+          context,
+          context.t('posts-recurring-scheduled', {
+            rule: schedule.rrule ?? rrule,
+          }),
+        );
+      } catch (error) {
+        await renderBackendError(context, error);
       }
     }
   });
+  return bot;
 }
 
-async function beginPost(
-  context: Context,
+function isSupportedRrule(value: string): boolean {
+  if (
+    value.length > 512 ||
+    !/^FREQ=(DAILY|WEEKLY|MONTHLY)(;[A-Z]+=[A-Z0-9,+=-]+)*$/.test(value)
+  ) {
+    return false;
+  }
+  return !value.includes('COUNT=0') && !value.includes('INTERVAL=0');
+}
+
+export async function showCreatePost(
+  context: BotContext,
   backend: BackendClient,
 ): Promise<void> {
   const userId = telegramUserId(context);
   if (!userId) {
-    await renderMenu(context, 'Не удалось определить пользователя Telegram.');
+    await renderPage(context, context.t('error-telegram-user'));
     return;
   }
   try {
@@ -351,59 +376,40 @@ async function beginPost(
       (channel) => channel.status === 'ACTIVE',
     );
     if (!channels.length) {
-      await renderMenu(
-        context,
-        'Сначала добавьте активный канал через раздел «Каналы».',
-        {
-          reply_markup: mainMenuKeyboard(),
-        },
-      );
+      await renderPage(context, context.t('posts-channel-required'));
       return;
     }
-    drafts.set(userId, { channelId: channels[0]!.id, phase: 'topic' });
+    drafts.set(userId, { phase: 'channel' });
     const keyboard = new InlineKeyboard();
     for (const channel of channels) {
       keyboard.text(channel.title, `posts:channel:${channel.id}`).row();
     }
-    await renderMenu(context, 'Выберите канал:', { reply_markup: keyboard });
-  } catch (error) {
-    await renderMenu(context, backendErrorMessage(error), {
-      reply_markup: mainMenuKeyboard(),
+    await renderPage(context, context.t('posts-ask-channel'), {
+      reply_markup: keyboard,
     });
+  } catch (error) {
+    await renderBackendError(context, error);
   }
-}
-
-async function askTopic(context: Context, topics: Topic[]): Promise<void> {
-  const keyboard = new InlineKeyboard()
-    .text('Без темы', 'posts:topic:none')
-    .row();
-  for (const topic of topics) {
-    keyboard.text(topic.name, `posts:topic:${topic.id}`).row();
-  }
-  await renderMenu(context, 'Выберите тему или продолжите без темы:', {
-    reply_markup: keyboard,
-  });
 }
 
 export async function showPosts(
-  context: Context,
+  context: BotContext,
   backend: BackendClient,
 ): Promise<void> {
   try {
     const userId = await resolveUser(context, backend);
     const posts = await backend.listPosts(userId);
     const text = posts.length
-      ? ['Ваши посты:', '', ...posts.map(formatPost)].join('\n')
-      : 'Постов пока нет.';
-    await renderMenu(context, text, { reply_markup: postsKeyboard(posts) });
-  } catch (error) {
-    await renderMenu(context, backendErrorMessage(error), {
-      reply_markup: mainMenuKeyboard(),
+      ? [
+          context.t('posts-heading'),
+          '',
+          ...posts.map((item) => formatPost(context, item)),
+        ].join('\n')
+      : context.t('posts-empty');
+    await renderPage(context, text, {
+      reply_markup: postsKeyboard(context, posts),
     });
+  } catch (error) {
+    await renderBackendError(context, error);
   }
-}
-
-function formatPost(post: Post): string {
-  const title = post.title || post.prompt.slice(0, 48);
-  return `• ${title}${post.prompt.length > 48 ? '…' : ''} — ${post.publicationMode}, ${post.status}`;
 }

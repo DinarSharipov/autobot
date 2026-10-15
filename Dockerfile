@@ -9,6 +9,7 @@ FROM dependencies AS build
 
 COPY tsconfig.json tsconfig.build.json ./
 COPY src ./src
+COPY scripts/build.mjs ./scripts/build.mjs
 RUN npm run build
 
 FROM dependencies AS production-dependencies

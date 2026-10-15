@@ -88,3 +88,26 @@ Subscription capabilities are enforced by the backend, not by grammY handlers. L
 - Do not duplicate subscription rules locally.
 - Do not duplicate Web Admin logic in the bot.
 - Treat backend responses as the source of truth for domain state.
+
+## Maintainability and grammY practices
+- Write code that is easy to extend and maintain: use small cohesive modules, explicit typed contracts, and a single source of truth for shared behavior. Avoid duplicated routes, labels, and state cleanup.
+- Follow the official grammY documentation and best practices: https://grammy.dev/guide/ and https://grammy.dev/advanced/structuring.html.
+- Use Composer to organize middleware. Register global navigation and commands before feature input handlers so navigation works at every step.
+- Always await Telegram API calls and middleware `next()`. Answer callback queries promptly and install a top-level `bot.catch` error boundary.
+- Keep the main reply keyboard separate from page messages. Feature modules must use the shared page renderer and inline keyboards; never remove or replace the main reply keyboard.
+- Keep Telegram's native keyboard hide/show control available: do not enable one-time or forced persistent keyboard behavior.
+- Define new sections in the shared section registry and connect their page handlers in the navigation module. Do not register section navigation inside feature modules.
+- Use the shared draft store for transient flows. Only one flow may be active per user; navigation and cancellation clear it, and starting another flow replaces it. Do not treat in-memory drafts as durable data.
+- Handle stale callbacks and backend version conflicts explicitly. Do not silently swallow unexpected Telegram API failures or retry state-changing backend operations without a deliberate idempotency policy.
+- Validate changes using formatting, lint, type checking, and build. Do not add automated tests, in accordance with the project decision above.
+
+## Localization
+- Use the official `@grammyjs/i18n` plugin with Fluent catalogs in `src/locales`. Use the shared `BotContext` type in Telegram modules.
+- All user-facing messages, keyboard labels, validation errors, notifications, and domain status labels must come from localization through `context.t(...)`. Never hardcode UI text in handlers or views.
+- Use complete messages with named variables. Do not concatenate translated sentence fragments or interpolate backend error text directly into the UI.
+- Keep Russian and English catalogs aligned. Add new keys and the same variable names to every supported locale. Run `npm run locales:check` when changing UI or translations.
+- Language follows Telegram's `language_code`; unsupported languages fall back to Russian. Keep commands, callback data, domain codes, and IDs language-independent.
+- Match reply-keyboard navigation across supported translations so changing Telegram's language does not break an already displayed keyboard.
+- Format dates and numbers through shared locale-aware helpers. The display language does not change the publication time zone.
+- User-authored content and backend data such as channel titles, generated text, and plan names are not UI translations. Technical logs and API error identifiers remain stable for operations.
+- Register localization before navigation and feature composers in `src/bot/app.ts`. Keep startup/shutdown in `src/main.ts`, rendering in views/UI modules, and backend error presentation in `src/bot/errors.ts`.

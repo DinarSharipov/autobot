@@ -1,12 +1,13 @@
 # IMPLEMENTATION_STATUS.md
 
 ## Current status
-The current worktree adds backend HMAC integration, Telegram-user onboarding, menu navigation,
-subscription/usage display, channel management, topic management, post creation/publication,
-resource editing/archiving, one-time scheduling with pause/resume/cancel controls, and moderation
-actions. These changes have not been deployed yet.
+The current worktree adds backend HMAC integration, localized Telegram-user onboarding, persistent
+navigation, channel/topic/post management, one-time and recurring scheduling, moderation actions,
+subscription/usage display, safe backend retry policy, and an optional Web Admin entry point.
+These changes have not been deployed yet.
 
-Local quality gates, GitHub Actions, production image publication, and SSH deployment pass. The `autobot-bot` container is running and healthy on the production server, and it is attached to the external `autobot-shared` network. The deployment updates only `autobot-bot`.
+Local quality gates pass. The historical production-deployment statement below has not been
+re-verified after the current worktree changes.
 
 ## Approved architecture
 - [x] Separate repository for Telegram bot
@@ -51,10 +52,10 @@ Local quality gates, GitHub Actions, production image publication, and SSH deplo
 - [x] Channels UI
 - [x] Topics UI: list and creation
 - [x] Posts UI and immediate publication request
-- [x] One-time scheduling UI
+- [x] One-time and recurring scheduling UI
 - [x] Moderation/revision UI
 - [x] Subscription/usage UI
-- [ ] Web Admin entry links where needed
+- [x] Optional Web Admin entry link
 - [x] Docker runtime
 - [x] CI/CD workflow
 - [x] No automated tests by project decision

@@ -26,6 +26,7 @@ Environment variables:
 
 - `BACKEND_URL=http://autobot-api:3000`
 - `LOG_LEVEL=info`
+- `WEB_ADMIN_URL=https://admin.example.com` (optional public URL for the Web Admin button)
 
 Never commit these values. The deployment workflow renders a temporary
 production environment file, transfers it with mode `0600`, and preserves the

@@ -13,6 +13,10 @@ const environmentSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   TELEGRAM_TOKEN: z.string().trim().min(1, 'TELEGRAM_TOKEN is required'),
+  WEB_ADMIN_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.url().optional(),
+  ),
 });
 
 export type Environment = {
@@ -23,6 +27,7 @@ export type Environment = {
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   nodeEnv: 'development' | 'test' | 'production';
   telegramToken: string;
+  webAdminUrl: string | undefined;
 };
 
 export function parseEnvironment(source: NodeJS.ProcessEnv): Environment {
@@ -36,5 +41,6 @@ export function parseEnvironment(source: NodeJS.ProcessEnv): Environment {
     logLevel: parsed.LOG_LEVEL,
     nodeEnv: parsed.NODE_ENV,
     telegramToken: parsed.TELEGRAM_TOKEN,
+    webAdminUrl: parsed.WEB_ADMIN_URL,
   };
 }

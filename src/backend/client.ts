@@ -172,6 +172,19 @@ export class BackendApiError extends Error {
   }
 }
 
+function shouldRetryBackendError(error: BackendApiError): boolean {
+  return (
+    error.code !== 'BOT_INTEGRATION_NOT_CONFIGURED' &&
+    [408, 429, 502, 503, 504].includes(error.status)
+  );
+}
+
+async function waitForRetry(attempt: number): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 200 * 2 ** (attempt - 1));
+  });
+}
+
 function canonicalPathAndQuery(path: string): string {
   const url = new URL(path, 'http://autobot.internal');
   const query = [...url.searchParams.entries()]
@@ -484,6 +497,27 @@ export class BackendClient {
     return response.data;
   }
 
+  async createRecurringSchedule(
+    telegramUserId: string,
+    input: { postId: string; rrule: string; timezone: string },
+  ): Promise<Schedule> {
+    const response = await this.request<ApiEnvelope<Schedule>>(
+      telegramUserId,
+      'POST',
+      '/api/v1/schedules',
+      {
+        body: {
+          ...input,
+          kind: 'RECURRING',
+          misfireGraceSeconds: 86_400,
+          misfirePolicy: 'LATEST_ONLY',
+        },
+        idempotencyKey: randomUUID(),
+      },
+    );
+    return response.data;
+  }
+
   async cancelSchedule(
     telegramUserId: string,
     scheduleId: string,
@@ -583,6 +617,33 @@ export class BackendClient {
   }
 
   private async request<T>(
+    telegramUserId: string,
+    method: 'DELETE' | 'GET' | 'PATCH' | 'POST',
+    path: string,
+    options: { body?: unknown; idempotencyKey?: string; ifMatch?: number } = {},
+  ): Promise<T> {
+    const maximumAttempts =
+      method === 'GET' || options.idempotencyKey !== undefined ? 3 : 1;
+
+    for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+      try {
+        return await this.requestOnce(telegramUserId, method, path, options);
+      } catch (error) {
+        if (
+          !(error instanceof BackendApiError) ||
+          !shouldRetryBackendError(error) ||
+          attempt === maximumAttempts
+        ) {
+          throw error;
+        }
+      }
+      await waitForRetry(attempt);
+    }
+
+    throw new BackendApiError('BACKEND_UNAVAILABLE', 503);
+  }
+
+  private async requestOnce<T>(
     telegramUserId: string,
     method: 'DELETE' | 'GET' | 'PATCH' | 'POST',
     path: string,
