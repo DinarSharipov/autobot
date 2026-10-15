@@ -142,9 +142,9 @@ start-page =
 subscription-page =
     Тариф: { $plan }
     Статус: { $status }
-    
-    Каналы: { $channels }
-    Темы: { $topics }
+
+    Лимит каналов: { $channels }
+    Лимит тем: { $topics }
     Генерации текста: { $textUsage }
     Генерации изображений: { $imageUsage }
     Правки на модерации: { $revisionUsage }

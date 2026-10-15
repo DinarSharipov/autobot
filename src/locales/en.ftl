@@ -142,9 +142,9 @@ start-page =
 subscription-page =
     Plan: { $plan }
     Status: { $status }
-    
-    Channels: { $channels }
-    Topics: { $topics }
+
+    Channel limit: { $channels }
+    Topic limit: { $topics }
     Text generations: { $textUsage }
     Image generations: { $imageUsage }
     Moderation revisions: { $revisionUsage }
