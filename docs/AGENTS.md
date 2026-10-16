@@ -101,6 +101,7 @@ Subscription capabilities are enforced by the backend, not by grammY handlers. L
 - Use the shared draft store for transient flows. Only one flow may be active per user; navigation and cancellation clear it, and starting another flow replaces it. Do not treat in-memory drafts as durable data.
 - Handle stale callbacks and backend version conflicts explicitly. Do not silently swallow unexpected Telegram API failures or retry state-changing backend operations without a deliberate idempotency policy.
 - Validate changes using formatting, lint, type checking, and build. Do not add automated tests, in accordance with the project decision above.
+- When the owner requests testing, use `docs/E2E_TEST_CASES.md` as the mandatory test checklist and update `docs/E2E_TEST_STATUS.md` during the same work session. Keep every case in one of three statuses: **Готово**, **Не проверено**, or **Ошибка**. For **Ошибка**, record reproducible evidence and the related issue or commit when available.
 
 ## Localization
 - Use the official `@grammyjs/i18n` plugin with Fluent catalogs in `src/locales`. Use the shared `BotContext` type in Telegram modules.
