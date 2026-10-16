@@ -17,6 +17,17 @@ const channelEditDrafts = createDraftStore<{
   channelId: string;
   version: number;
 }>();
+const channelConnectDrafts = createDraftStore<true>();
+
+function normalizeChannelInput(value: string): string {
+  return (
+    value
+      .trim()
+      .replace(/^https?:\/\/t\.me\//i, '')
+      .replace(/^@/, '')
+      .split(/[/?#]/, 1)[0] ?? ''
+  );
+}
 
 async function createOrGetChannel(
   backend: BackendClient,
@@ -60,6 +71,13 @@ export function createChannelFeature(
   backend: BackendClient,
 ): Composer<BotContext> {
   const bot = new Composer<BotContext>();
+  bot.callbackQuery('channels:connect', async (context) => {
+    await context.answerCallbackQuery();
+    const userId = telegramUserId(context);
+    if (!userId) return;
+    channelConnectDrafts.set(userId, true);
+    await renderPage(context, context.t('channels-ask-username'));
+  });
   bot.callbackQuery(/^channels:verify:(.+)$/, async (context) => {
     await context.answerCallbackQuery();
     const channelId = context.match[1];
@@ -171,6 +189,49 @@ export function createChannelFeature(
 
   bot.on('message:text', async (context, next) => {
     const userId = telegramUserId(context);
+    if (userId && channelConnectDrafts.get(userId)) {
+      const input = normalizeChannelInput(context.message.text);
+      if (!input || input.length > 128) {
+        await renderPage(context, context.t('validation-channel-username'));
+        return;
+      }
+      try {
+        const chat = await context.api.getChat(
+          input.startsWith('-') ? input : `@${input}`,
+        );
+        if (chat.type !== 'channel') {
+          await renderPage(context, context.t('error-not-channel'));
+          return;
+        }
+        const member = await context.api.getChatMember(chat.id, context.me.id);
+        const canPost =
+          member.status === 'creator' ||
+          (member.status === 'administrator' &&
+            member.can_post_messages === true);
+        if (!canPost) {
+          await renderPage(context, context.t('error-channel-permissions'));
+          return;
+        }
+        const resolvedUserId = await resolveUser(context, backend);
+        const channel = await createOrGetChannel(
+          backend,
+          resolvedUserId,
+          String(chat.id),
+        );
+        channelConnectDrafts.delete(userId);
+        await renderPage(
+          context,
+          context.t('channels-connected', {
+            title: channel.title,
+            status: statusLabel(context, channel.status),
+          }),
+          { reply_markup: channelsKeyboard(context, [channel]) },
+        );
+      } catch (error) {
+        await renderBackendError(context, error);
+      }
+      return;
+    }
     const editDraft = userId ? channelEditDrafts.get(userId) : undefined;
     if (userId && editDraft) {
       const title = context.message.text.trim();

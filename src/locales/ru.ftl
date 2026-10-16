@@ -1,6 +1,7 @@
 # User-facing text. Keep message IDs and variable names aligned across locales.
 
 channels-connect = Подключить канал
+channels-ask-username = Отправьте @username канала или ссылку вида https://t.me/channel.
 action-edit-named = Изменить: { $name }
 action-archive = Архив
 action-verify-named = Проверить: { $name }
@@ -11,6 +12,7 @@ channels-archived = Канал отправлен в архив.
 channels-connected = Канал «{ $title }» подключён со статусом { $status }.
 channels-open = Открыть каналы
 validation-title = Название должно содержать от 1 до 255 символов.
+validation-channel-username = Укажите корректный @username или ссылку на канал.
 channels-renamed = Название канала изменено на «{ $title }».
 channels-heading = Ваши каналы:
 channels-empty = Каналов пока нет. Нажмите «Подключить канал» и добавьте бота администратором с правом публикации сообщений.

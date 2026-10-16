@@ -7,9 +7,9 @@ export function channelsKeyboard(
   context: BotContext,
   channels: Channel[],
 ): InlineKeyboard {
-  const keyboard = new InlineKeyboard().url(
+  const keyboard = new InlineKeyboard().text(
     context.t('channels-connect'),
-    `https://t.me/${context.me.username}?startchannel&admin=post_messages`,
+    'channels:connect',
   );
   for (const channel of channels) {
     keyboard

@@ -1,6 +1,7 @@
 # User-facing text. Keep message IDs and variable names aligned across locales.
 
 channels-connect = Connect channel
+channels-ask-username = Send the channel @username or a link such as https://t.me/channel.
 action-edit-named = Edit: { $name }
 action-archive = Archive
 action-verify-named = Verify: { $name }
@@ -11,6 +12,7 @@ channels-archived = Channel archived.
 channels-connected = Channel “{ $title }” connected with status { $status }.
 channels-open = Open channels
 validation-title = The title must contain between 1 and 255 characters.
+validation-channel-username = Enter a valid @username or channel link.
 channels-renamed = Channel title changed to “{ $title }”.
 channels-heading = Your channels:
 channels-empty = No channels yet. Tap “Connect channel” and add the bot as an administrator with permission to post messages.
