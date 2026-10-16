@@ -81,7 +81,11 @@ posts-ask-edit-prompt = Отправьте новый prompt поста (до 20
 posts-archived = Пост отправлен в архив.
 posts-ask-date = Отправьте дату и время в ISO 8601 с часовым поясом, например 2030-01-15T18:00:00+03:00.
 posts-ask-schedule-kind = Выберите тип расписания.
-posts-ask-rrule = Отправьте правило повторения в формате RRULE, например FREQ=DAILY;BYHOUR=9;BYMINUTE=0. Поддерживаются DAILY, WEEKLY и MONTHLY.
+posts-ask-frequency = Как часто повторять публикацию?
+frequency-daily = Каждый день
+frequency-weekly = Каждую неделю
+frequency-monthly = Каждый месяц
+posts-ask-time = В какое время публиковать? Укажите время в формате ЧЧ:ММ, например 09:00.
 validation-prompt = Prompt должен содержать от 1 до 20 000 символов.
 posts-prompt-updated = Prompt поста обновлён.
 validation-post-request = Текст запроса должен содержать от 1 до 20 000 символов.
@@ -91,8 +95,8 @@ mode-moderation = Через модерацию
 validation-date = Укажите корректную дату ISO 8601 с часовым поясом.
 validation-date-future = Дата публикации должна быть в будущем.
 posts-scheduled = Публикация запланирована на { $date }.
-posts-recurring-scheduled = Повторяющееся расписание создано: { $rule }.
-validation-rrule = Укажите RRULE с FREQ=DAILY, WEEKLY или MONTHLY. Например: FREQ=WEEKLY;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=0.
+posts-recurring-scheduled = Повторяющаяся публикация настроена: { $frequency }, в { $time }.
+validation-time = Укажите время в формате ЧЧ:ММ, например 09:00.
 error-telegram-user = Не удалось определить пользователя Telegram.
 posts-channel-required = Сначала добавьте активный канал через раздел «Каналы».
 posts-ask-channel = Выберите канал:

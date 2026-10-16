@@ -81,7 +81,11 @@ posts-ask-edit-prompt = Send the new post prompt (up to 20,000 characters).
 posts-archived = Post archived.
 posts-ask-date = Send the date and time in ISO 8601 format with a time zone offset, for example 2030-01-15T18:00:00+03:00.
 posts-ask-schedule-kind = Choose the schedule type.
-posts-ask-rrule = Send a recurrence rule in RRULE format, for example FREQ=DAILY;BYHOUR=9;BYMINUTE=0. DAILY, WEEKLY, and MONTHLY are supported.
+posts-ask-frequency = How often should this publication repeat?
+frequency-daily = Every day
+frequency-weekly = Every week
+frequency-monthly = Every month
+posts-ask-time = What time should it be published? Send the time as HH:MM, for example 09:00.
 validation-prompt = The prompt must contain between 1 and 20,000 characters.
 posts-prompt-updated = Post prompt updated.
 validation-post-request = The request must contain between 1 and 20,000 characters.
@@ -91,8 +95,8 @@ mode-moderation = With moderation
 validation-date = Enter a valid ISO 8601 date with a time zone offset.
 validation-date-future = The publication date must be in the future.
 posts-scheduled = Publication scheduled for { $date }.
-posts-recurring-scheduled = Recurring schedule created: { $rule }.
-validation-rrule = Enter an RRULE with FREQ=DAILY, WEEKLY, or MONTHLY. For example: FREQ=WEEKLY;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=0.
+posts-recurring-scheduled = Recurring publication configured: { $frequency } at { $time }.
+validation-time = Send a time as HH:MM, for example 09:00.
 error-telegram-user = Unable to identify the Telegram user.
 posts-channel-required = First add an active channel in the Channels section.
 posts-ask-channel = Choose a channel:

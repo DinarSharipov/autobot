@@ -389,7 +389,7 @@ export function createPostFeature(
       const rrule = `FREQ=${draft.frequency};BYHOUR=${hour};BYMINUTE=${minute}`;
       try {
         const resolvedUserId = await resolveUser(context, backend);
-        const schedule = await backend.createRecurringSchedule(resolvedUserId, {
+        await backend.createRecurringSchedule(resolvedUserId, {
           postId: draft.postId,
           rrule,
           timezone: PUBLICATION_TIMEZONE,
@@ -399,7 +399,8 @@ export function createPostFeature(
         await renderPage(
           context,
           context.t('posts-recurring-scheduled', {
-            rule: schedule.rrule ?? rrule,
+            frequency: context.t(`frequency-${draft.frequency.toLowerCase()}`),
+            time: value,
           }),
         );
       } catch (error) {
