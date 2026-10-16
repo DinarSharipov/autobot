@@ -24,7 +24,12 @@ type PostDraft =
   | ({ phase: 'image'; publicationMode: Post['publicationMode'] } & PostContent)
   | { phase: 'schedule-kind'; postId: string }
   | { phase: 'schedule-once'; postId: string }
-  | { phase: 'schedule-recurring'; postId: string };
+  | { phase: 'schedule-frequency'; postId: string }
+  | {
+      phase: 'schedule-recurring';
+      postId: string;
+      frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+    };
 
 const drafts = createDraftStore<PostDraft>();
 const postEditDrafts = createDraftStore<{ postId: string; version: number }>();
@@ -252,14 +257,40 @@ export function createPostFeature(
         return;
       }
       const isRecurring = context.match[1] === 'recurring';
-      drafts.set(userId, {
-        phase: isRecurring ? 'schedule-recurring' : 'schedule-once',
-        postId: draft.postId,
+      if (!isRecurring) {
+        drafts.set(userId, { phase: 'schedule-once', postId: draft.postId });
+        await renderPage(context, context.t('posts-ask-date'));
+        return;
+      }
+      drafts.set(userId, { phase: 'schedule-frequency', postId: draft.postId });
+      await renderPage(context, context.t('posts-ask-frequency'), {
+        reply_markup: new InlineKeyboard()
+          .text(context.t('frequency-daily'), 'posts:frequency:DAILY')
+          .row()
+          .text(context.t('frequency-weekly'), 'posts:frequency:WEEKLY')
+          .row()
+          .text(context.t('frequency-monthly'), 'posts:frequency:MONTHLY'),
       });
-      await renderPage(
-        context,
-        context.t(isRecurring ? 'posts-ask-rrule' : 'posts-ask-date'),
-      );
+    },
+  );
+
+  bot.callbackQuery(
+    /^posts:frequency:(DAILY|WEEKLY|MONTHLY)$/,
+    async (context) => {
+      await context.answerCallbackQuery();
+      const userId = telegramUserId(context);
+      if (!userId) return;
+      const draft = drafts.get(userId);
+      if (draft?.phase !== 'schedule-frequency') {
+        await renderPage(context, context.t('posts-flow-expired'));
+        return;
+      }
+      drafts.set(userId, {
+        phase: 'schedule-recurring',
+        postId: draft.postId,
+        frequency: context.match[1] as 'DAILY' | 'WEEKLY' | 'MONTHLY',
+      });
+      await renderPage(context, context.t('posts-ask-time'));
     },
   );
 
@@ -342,17 +373,27 @@ export function createPostFeature(
     }
 
     if (draft.phase === 'schedule-recurring') {
-      const rrule = value.toUpperCase();
-      if (!isSupportedRrule(rrule)) {
-        await renderPage(context, context.t('validation-rrule'));
+      const match = /^(?:[01]\d|2[0-3]):[0-5]\d$/.exec(value);
+      if (!match) {
+        await renderPage(context, context.t('validation-time'));
         return;
       }
+      const hour = Number(value.slice(0, 2));
+      const minute = Number(value.slice(3, 5));
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(hour, minute, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1);
+      const date = next.toISOString().slice(0, 10);
+      const runAt = `${date}T${value}:00+03:00`;
+      const rrule = `FREQ=${draft.frequency};BYHOUR=${hour};BYMINUTE=${minute}`;
       try {
         const resolvedUserId = await resolveUser(context, backend);
         const schedule = await backend.createRecurringSchedule(resolvedUserId, {
           postId: draft.postId,
           rrule,
           timezone: PUBLICATION_TIMEZONE,
+          runAt,
         });
         drafts.delete(userId);
         await renderPage(
@@ -367,16 +408,6 @@ export function createPostFeature(
     }
   });
   return bot;
-}
-
-function isSupportedRrule(value: string): boolean {
-  if (
-    value.length > 512 ||
-    !/^FREQ=(DAILY|WEEKLY|MONTHLY)(;[A-Z]+=[A-Z0-9,+=-]+)*$/.test(value)
-  ) {
-    return false;
-  }
-  return !value.includes('COUNT=0') && !value.includes('INTERVAL=0');
 }
 
 export async function showCreatePost(
