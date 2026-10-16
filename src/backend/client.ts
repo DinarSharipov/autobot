@@ -499,7 +499,7 @@ export class BackendClient {
 
   async createRecurringSchedule(
     telegramUserId: string,
-    input: { postId: string; rrule: string; timezone: string },
+    input: { postId: string; rrule: string; timezone: string; runAt: string },
   ): Promise<Schedule> {
     const response = await this.request<ApiEnvelope<Schedule>>(
       telegramUserId,
