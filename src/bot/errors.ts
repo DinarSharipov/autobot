@@ -9,6 +9,8 @@ const ERROR_KEYS: Readonly<Record<string, string>> = {
   BOT_AUTH_DEPENDENCY_UNAVAILABLE: 'error-unavailable',
   ENTITLEMENT_LIMIT_EXCEEDED: 'error-entitlement',
   USAGE_LIMIT_REACHED: 'error-usage',
+  IMAGE_GENERATION_NOT_INCLUDED: 'error-image-generation-not-included',
+  MODERATION_NOT_INCLUDED: 'error-moderation-not-included',
   VALIDATION_FAILED: 'error-validation',
   CHANNEL_NOT_ACTIVE: 'error-channel-inactive',
   TELEGRAM_CHANNEL_UNAVAILABLE: 'error-channel-unavailable',
