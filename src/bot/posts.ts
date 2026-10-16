@@ -29,6 +29,24 @@ type PostDraft =
 const drafts = createDraftStore<PostDraft>();
 const postEditDrafts = createDraftStore<{ postId: string; version: number }>();
 
+async function listActiveChannels(
+  backend: BackendClient,
+  telegramUserId: string,
+): Promise<Awaited<ReturnType<BackendClient['listChannels']>>> {
+  const channels = await backend.listChannels(telegramUserId);
+  const activeChannels = channels.filter(
+    (channel) => channel.status === 'ACTIVE',
+  );
+  if (activeChannels.length > 0) return activeChannels;
+
+  // A channel connection can become visible shortly after the write commits.
+  // Re-read once before showing a potentially misleading empty state.
+  await new Promise<void>((resolve) => setTimeout(resolve, 250));
+  return (await backend.listChannels(telegramUserId)).filter(
+    (channel) => channel.status === 'ACTIVE',
+  );
+}
+
 export function createPostFeature(
   backend: BackendClient,
 ): Composer<BotContext> {
@@ -372,9 +390,7 @@ export async function showCreatePost(
   }
   try {
     const resolvedUserId = await resolveUser(context, backend);
-    const channels = (await backend.listChannels(resolvedUserId)).filter(
-      (channel) => channel.status === 'ACTIVE',
-    );
+    const channels = await listActiveChannels(backend, resolvedUserId);
     if (!channels.length) {
       await renderPage(context, context.t('posts-channel-required'));
       return;
