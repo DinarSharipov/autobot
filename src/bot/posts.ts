@@ -386,7 +386,10 @@ export function createPostFeature(
       if (next <= now) next.setDate(next.getDate() + 1);
       const date = next.toISOString().slice(0, 10);
       const runAt = `${date}T${value}:00+03:00`;
-      const rrule = `FREQ=${draft.frequency};BYHOUR=${hour};BYMINUTE=${minute}`;
+      // The backend takes the publication time from runAt. RRULE describes
+      // only the recurrence calendar and deliberately does not support
+      // BYHOUR/BYMINUTE.
+      const rrule = `FREQ=${draft.frequency}`;
       try {
         const resolvedUserId = await resolveUser(context, backend);
         await backend.createRecurringSchedule(resolvedUserId, {
