@@ -34,6 +34,47 @@ type PostDraft =
 const drafts = createDraftStore<PostDraft>();
 const postEditDrafts = createDraftStore<{ postId: string; version: number }>();
 
+const RECURRENCE_WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const;
+
+type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+function nextRecurringSchedule(
+  frequency: RecurringFrequency,
+  time: string,
+  now = new Date(),
+): { runAt: string; rrule: string } {
+  const local = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: PUBLICATION_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(now)
+      .filter(({ type }) => type !== 'literal')
+      .map(({ type, value }) => [type, Number(value)]),
+  ) as Record<'year' | 'month' | 'day' | 'hour' | 'minute', number>;
+  const hour = Number(time.slice(0, 2));
+  const minute = Number(time.slice(3, 5));
+  const target = new Date(Date.UTC(local.year, local.month - 1, local.day));
+  if (hour < local.hour || (hour === local.hour && minute <= local.minute)) {
+    target.setUTCDate(target.getUTCDate() + 1);
+  }
+  const date = target.toISOString().slice(0, 10);
+  const weekday = RECURRENCE_WEEKDAYS[target.getUTCDay()];
+  const rrule =
+    frequency === 'WEEKLY'
+      ? `FREQ=WEEKLY;BYDAY=${weekday}`
+      : frequency === 'MONTHLY'
+        ? `FREQ=MONTHLY;BYMONTHDAY=${target.getUTCDate()}`
+        : 'FREQ=DAILY';
+
+  return { runAt: `${date}T${time}:00+03:00`, rrule };
+}
+
 async function listActiveChannels(
   backend: BackendClient,
   telegramUserId: string,
@@ -378,18 +419,7 @@ export function createPostFeature(
         await renderPage(context, context.t('validation-time'));
         return;
       }
-      const hour = Number(value.slice(0, 2));
-      const minute = Number(value.slice(3, 5));
-      const now = new Date();
-      const next = new Date(now);
-      next.setHours(hour, minute, 0, 0);
-      if (next <= now) next.setDate(next.getDate() + 1);
-      const date = next.toISOString().slice(0, 10);
-      const runAt = `${date}T${value}:00+03:00`;
-      // The backend takes the publication time from runAt. RRULE describes
-      // only the recurrence calendar and deliberately does not support
-      // BYHOUR/BYMINUTE.
-      const rrule = `FREQ=${draft.frequency}`;
+      const { runAt, rrule } = nextRecurringSchedule(draft.frequency, value);
       try {
         const resolvedUserId = await resolveUser(context, backend);
         await backend.createRecurringSchedule(resolvedUserId, {

@@ -509,7 +509,7 @@ export class BackendClient {
         body: {
           ...input,
           kind: 'RECURRING',
-          misfireGraceSeconds: 86_400,
+          misfireGraceSeconds: 21_600,
           misfirePolicy: 'LATEST_ONLY',
         },
         idempotencyKey: randomUUID(),
