@@ -25,10 +25,13 @@ type PostDraft =
   | { phase: 'schedule-kind'; postId: string }
   | { phase: 'schedule-once'; postId: string }
   | { phase: 'schedule-frequency'; postId: string }
+  | { phase: 'schedule-weekday'; postId: string }
+  | { phase: 'schedule-monthday'; postId: string }
   | {
       phase: 'schedule-recurring';
       postId: string;
       frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+      day: number | null;
     };
 
 const drafts = createDraftStore<PostDraft>();
@@ -41,6 +44,7 @@ type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY';
 function nextRecurringSchedule(
   frequency: RecurringFrequency,
   time: string,
+  day: number | null,
   now = new Date(),
 ): { runAt: string; rrule: string } {
   const local = Object.fromEntries(
@@ -59,17 +63,41 @@ function nextRecurringSchedule(
   ) as Record<'year' | 'month' | 'day' | 'hour' | 'minute', number>;
   const hour = Number(time.slice(0, 2));
   const minute = Number(time.slice(3, 5));
+  const nowMinutes = local.hour * 60 + local.minute;
+  const requestedMinutes = hour * 60 + minute;
   const target = new Date(Date.UTC(local.year, local.month - 1, local.day));
-  if (hour < local.hour || (hour === local.hour && minute <= local.minute)) {
-    target.setUTCDate(target.getUTCDate() + 1);
+  if (frequency === 'DAILY') {
+    if (requestedMinutes <= nowMinutes)
+      target.setUTCDate(target.getUTCDate() + 1);
+  } else if (frequency === 'WEEKLY' && day !== null) {
+    let daysUntil = (day - target.getUTCDay() + 7) % 7;
+    if (daysUntil === 0 && requestedMinutes <= nowMinutes) daysUntil = 7;
+    target.setUTCDate(target.getUTCDate() + daysUntil);
+  } else if (frequency === 'MONTHLY' && day !== null) {
+    target.setUTCDate(1);
+    for (let monthOffset = 0; monthOffset < 24; monthOffset += 1) {
+      const lastDay = new Date(
+        Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
+      ).getUTCDate();
+      if (
+        day <= lastDay &&
+        (target.getUTCFullYear() > local.year ||
+          target.getUTCMonth() + 1 > local.month ||
+          day > local.day ||
+          (day === local.day && requestedMinutes > nowMinutes))
+      ) {
+        target.setUTCDate(day);
+        break;
+      }
+      target.setUTCMonth(target.getUTCMonth() + 1);
+    }
   }
   const date = target.toISOString().slice(0, 10);
-  const weekday = RECURRENCE_WEEKDAYS[target.getUTCDay()];
   const rrule =
     frequency === 'WEEKLY'
-      ? `FREQ=WEEKLY;BYDAY=${weekday}`
+      ? `FREQ=WEEKLY;BYDAY=${RECURRENCE_WEEKDAYS[day ?? target.getUTCDay()]}`
       : frequency === 'MONTHLY'
-        ? `FREQ=MONTHLY;BYMONTHDAY=${target.getUTCDate()}`
+        ? `FREQ=MONTHLY;BYMONTHDAY=${day ?? target.getUTCDate()}`
         : 'FREQ=DAILY';
 
   return { runAt: `${date}T${time}:00+03:00`, rrule };
@@ -326,10 +354,79 @@ export function createPostFeature(
         await renderPage(context, context.t('posts-flow-expired'));
         return;
       }
+      const frequency = context.match[1] as RecurringFrequency;
+      if (frequency === 'DAILY') {
+        drafts.set(userId, {
+          phase: 'schedule-recurring',
+          postId: draft.postId,
+          frequency,
+          day: null,
+        });
+        await renderPage(context, context.t('posts-ask-time'));
+        return;
+      }
+      if (frequency === 'WEEKLY') {
+        drafts.set(userId, { phase: 'schedule-weekday', postId: draft.postId });
+        const keyboard = new InlineKeyboard();
+        for (let day = 1; day <= 7; day += 1) {
+          const weekday = day % 7;
+          keyboard.text(
+            context.t(`weekday-${weekday}`),
+            `posts:weekday:${weekday}`,
+          );
+          if (day % 2 === 0) keyboard.row();
+        }
+        await renderPage(context, context.t('posts-ask-weekday'), {
+          reply_markup: keyboard,
+        });
+        return;
+      }
+      drafts.set(userId, { phase: 'schedule-monthday', postId: draft.postId });
+      const keyboard = new InlineKeyboard();
+      for (let day = 1; day <= 31; day += 1) {
+        keyboard.text(String(day), `posts:monthday:${day}`);
+        if (day % 7 === 0) keyboard.row();
+      }
+      await renderPage(context, context.t('posts-ask-monthday'), {
+        reply_markup: keyboard,
+      });
+    },
+  );
+
+  bot.callbackQuery(/^posts:weekday:([0-6])$/, async (context) => {
+    await context.answerCallbackQuery();
+    const userId = telegramUserId(context);
+    const day = Number(context.match[1]);
+    const draft = userId ? drafts.get(userId) : undefined;
+    if (!userId || draft?.phase !== 'schedule-weekday') {
+      await renderPage(context, context.t('posts-flow-expired'));
+      return;
+    }
+    drafts.set(userId, {
+      phase: 'schedule-recurring',
+      postId: draft.postId,
+      frequency: 'WEEKLY',
+      day,
+    });
+    await renderPage(context, context.t('posts-ask-time'));
+  });
+
+  bot.callbackQuery(
+    /^posts:monthday:([1-9]|[12]\d|3[01])$/,
+    async (context) => {
+      await context.answerCallbackQuery();
+      const userId = telegramUserId(context);
+      const day = Number(context.match[1]);
+      const draft = userId ? drafts.get(userId) : undefined;
+      if (!userId || draft?.phase !== 'schedule-monthday') {
+        await renderPage(context, context.t('posts-flow-expired'));
+        return;
+      }
       drafts.set(userId, {
         phase: 'schedule-recurring',
         postId: draft.postId,
-        frequency: context.match[1] as 'DAILY' | 'WEEKLY' | 'MONTHLY',
+        frequency: 'MONTHLY',
+        day,
       });
       await renderPage(context, context.t('posts-ask-time'));
     },
@@ -419,7 +516,11 @@ export function createPostFeature(
         await renderPage(context, context.t('validation-time'));
         return;
       }
-      const { runAt, rrule } = nextRecurringSchedule(draft.frequency, value);
+      const { runAt, rrule } = nextRecurringSchedule(
+        draft.frequency,
+        value,
+        draft.day,
+      );
       try {
         const resolvedUserId = await resolveUser(context, backend);
         await backend.createRecurringSchedule(resolvedUserId, {
