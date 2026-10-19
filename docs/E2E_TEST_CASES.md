@@ -63,3 +63,20 @@
 Сценарий считается успешным только после проверки результата в Telegram и, если сценарий меняет
 доменное состояние, подтверждения состояния через повторное открытие страницы или backend-данные.
 Для публикаций дополнительно проверяется фактическое сообщение в тестовом канале.
+
+## Generation pack migration acceptance — 2026-10-19 (pending)
+
+Prior subscription/monthly-usage and no-image-preview cases document legacy coverage; they are not acceptance criteria for the target billing model. Use [GENERATION_PACKS_PLAN.md](GENERATION_PACKS_PLAN.md) for replacement requirements. Historical PASS/Готово results remain historical.
+
+| Case | Expected behavior | Status |
+| --- | --- | --- |
+| PACK-001 | Initial text consumes 1 TEXT and grants exactly three included successful revisions | Не проверено |
+| PACK-002 | Fourth and later revisions cost 1 TEXT after confirmation; allowance does not reset | Не проверено |
+| PACK-003 | Every generated recurring occurrence has its own initial debit and allowance | Не проверено |
+| PACK-004 | Every image replacement costs 1 IMAGE; selected preview is reused at publication | Не проверено |
+| PACK-005 | Duplicate payment notifications grant credits once; forged/redirect-only confirmation grants none | Не проверено |
+| PACK-006 | Concurrent last-credit and last-included-revision requests cannot overspend | Не проверено |
+| PACK-007 | Technical failures release reservations; delivery retry does not regenerate or charge again | Не проверено |
+| PACK-008 | Purchased balances survive month boundaries; gifts granted once | Не проверено |
+| PACK-009 | Insufficient funds blocks the relevant operation; top-up/resume is idempotent | Не проверено |
+| PACK-010 | Client views, backend balances and purchase history agree | Не проверено |

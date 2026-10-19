@@ -1,5 +1,7 @@
 # IMPLEMENTATION_STATUS.md
 
+> Product decision (2026-10-19): [Generation packs and prepaid balances](GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. The transition is planned, not implemented. Legacy behavior and historical verification below must not be treated as the new billing contract.
+
 ## Current status
 The current worktree adds backend HMAC integration, localized Telegram-user onboarding, persistent
 navigation, channel/topic/post management, one-time and recurring scheduling, moderation actions,
@@ -62,3 +64,13 @@ re-verified after the current worktree changes.
 - [x] Docker runtime
 - [x] CI/CD workflow
 - [x] No automated tests by project decision
+
+## Generation packs transition — 2026-10-19
+
+- [x] Product direction and cross-repository plan documented.
+- [ ] Prepaid TEXT/IMAGE balances, orders and payments implemented.
+- [ ] Three included text revisions and paid extra revisions implemented.
+- [ ] Image preview, paid replacement and selected-image reuse implemented.
+- [ ] Legacy migration, client integration and new acceptance checks completed.
+
+Existing checked subscription/usage items above describe legacy implementation only. New billing is not deployed.

@@ -1,5 +1,7 @@
 # IMPLEMENTATION_PLAN.md
 
+> Product decision (2026-10-19): [Generation packs and prepaid balances](GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. The transition is planned, not implemented. Legacy behavior and historical verification below must not be treated as the new billing contract.
+
 ## Goal
 Build the grammY Telegram client for Autobot while keeping all domain logic in `autobot-backend` and interoperating with the standalone `autobot-web` client.
 
@@ -89,3 +91,21 @@ Pipeline goals:
 - scheduler implementation
 - background workers
 - direct scheduled publishing from workers
+
+## Priority: generation packs migration (2026-10-19)
+
+## Telegram client delivery plan
+
+- [ ] Replace subscription/tariff screens with Balance, Buy texts, Buy images and purchase history.
+- [ ] Show both available balances, reservations, pack quantity/price and payment states from backend.
+- [ ] Show "3 included revisions remaining" per generated post occurrence and refresh after each operation.
+- [ ] On fourth/later revision show a 1 TEXT confirmation; on every image replacement show 1 IMAGE.
+- [ ] Support image preview, replacement and approval before channel publication in MODERATION mode.
+- [ ] Handle stale callbacks, version conflicts, depleted balances, top-up and blocked occurrence resume.
+- [ ] Do not grant credits on return from checkout; wait for backend-confirmed order/payment status.
+- [ ] Update typed API client and RU/EN Fluent catalogs; do not duplicate wallet or payment logic.
+- [ ] Update and manually execute docs/E2E_TEST_CASES.md; record new cases as Не проверено until executed.
+  Preserve the repository decision not to add automated tests; run locales:check, formatting, lint,
+  typecheck and build when implementing client code.
+
+Use [GENERATION_PACKS_PLAN.md](GENERATION_PACKS_PLAN.md) as the billing contract; supersede conflicting legacy tasks above.

@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> Product decision (2026-10-19): [Generation packs and prepaid balances](GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. The transition is planned, not implemented. Legacy behavior and historical verification below must not be treated as the new billing contract.
+
 ## Project
 Autobot is a Telegram-first service for creating, scheduling, moderating, and publishing AI-generated posts to Telegram channels.
 
@@ -65,11 +67,9 @@ Publishing modes:
 - AUTO: publish generated content without user approval
 - MODERATION: generated content must be reviewed; user may request revisions before approval
 
-Subscription capabilities are enforced by the backend, not by grammY handlers. Limits include at least:
-- number of channels
-- number of topics
-- number of moderation/revision actions
-- image generation availability/usage
+Prepaid TEXT/IMAGE balances, three included text revisions per generated occurrence, and global
+channel/topic limits are enforced by backend. Follow [GENERATION_PACKS_PLAN.md](GENERATION_PACKS_PLAN.md).
+Show explicit costs for paid revisions and every image replacement; never derive authoritative balances locally.
 
 ## Client strategy
 - Telegram Mini App / Telegram Web App is NOT part of the product plan.
