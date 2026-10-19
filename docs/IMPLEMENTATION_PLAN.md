@@ -109,3 +109,61 @@ Pipeline goals:
   typecheck and build when implementing client code.
 
 Use [GENERATION_PACKS_PLAN.md](GENERATION_PACKS_PLAN.md) as the billing contract; supersede conflicting legacy tasks above.
+
+## Purchase integration coordination — 2026-10-19
+
+Status: planned only; this documentation does not activate checkout or deploy billing.
+Backend owns prices, orders, payment verification and credit accounting. Clients only display
+backend state. Canonical prices and the one-time gift (3 TEXT + 1 IMAGE) are maintained in
+[backend PRICING.md](https://github.com/DinarSharipov/autobot-backend/blob/dev/docs/PRICING.md);
+do not copy price tables or gift constants into clients.
+
+Delivery order: backend contracts and wallets -> backend test checkout and reconciliation ->
+bot purchase UI -> integrated acceptance and legacy cutover -> production payment activation.
+Web Admin work remains deferred and is not a prerequisite for bot/backend checkout.
+Use hosted YooKassa redirect checkout as the technical MVP scenario; no recurring payments.
+Telegram requires Stars for digital services sold inside Telegram; an external redirect does not
+remove that requirement. Record the production sales-channel decision before enabling the bot
+purchase entry point. Keep payment adapters separate from wallet accounting.
+Reference: https://core.telegram.org/bots/payments-stars
+
+Proposed shared contracts (finalize in backend OpenAPI before implementation):
+- GET /api/v1/billing/packs: server catalogue, version, credit type, quantity, RUB amount.
+- GET /api/v1/billing/balance: available/reserved TEXT and IMAGE.
+- POST /api/v1/billing/orders: pack ID, catalogue version and stable idempotency key;
+  derive owner from authenticated identity and calculate price server-side.
+- GET /api/v1/billing/orders and GET /api/v1/billing/orders/{id}: owned purchase history/status,
+  payment status, fulfillment status, confirmation URL when applicable.
+- GET /api/v1/billing/ledger: owned credit-operation history.
+- POST /api/v1/billing/webhooks/yookassa: provider notification endpoint, independently verified;
+  not protected by bot HMAC or browser session middleware.
+Routes are proposals, not implemented endpoints. Payment status and credit fulfillment status
+must be distinguishable; clients never infer a grant from a redirect or provider status alone.
+
+### Telegram client implementation checklist
+
+- [ ] Replace subscription navigation with Balance, Buy texts, Buy images, Orders/history.
+  Obtain prices, quantities, gift information and balances from backend, without local constants.
+- [ ] Extend the typed HMAC backend client with catalogue, balances, create-order, owned order
+  status/history and ledger contracts. Keep YooKassa credentials/API/webhooks out of this repo.
+- [ ] Show pack quantity and exact RUB price before creating an order. Persist/reuse the same
+  purchase operation key for retries and duplicate callbacks; a deliberate new purchase is separate.
+- [ ] Display hosted confirmation_url returned by backend and a Check payment action for that
+  order. Show pending/canceled/verification-delayed/paid-but-not-yet-credited/fulfilled states.
+  Returning to the bot or pressing Check payment must never grant credits locally.
+- [ ] Recover pending purchases from backend after bot restart; handle stale callbacks, ownership
+  errors, changed catalogue versions and already fulfilled orders without creating duplicate orders.
+- [ ] Integrate durable payment-result notifications with the backend-owned delivery contract.
+  Refresh balances after fulfillment; handle blocked bot/message delivery independently of payment.
+- [ ] For insufficient balance show the relevant TEXT/IMAGE top-up and retain the blocked operation
+  reference. Resume through backend after confirmed funds; do not silently auto-buy or auto-spend.
+- [ ] Show remaining included text revisions and explicitly confirm 1 TEXT for extra revisions
+  and 1 IMAGE for every image replacement using backend cost/version checks.
+- [ ] Register small billing handlers through shared navigation/section registry, preserve the
+  main keyboard and clear transient flows on navigation. Localize all messages in RU/EN Fluent.
+- [ ] Update manual E2E checklist/status for successful/canceled/pending payments, repeated clicks,
+  redirect without payment, restart, wrong order owner, delayed grant and post-top-up resume.
+  Start cases as Не проверено; preserve the rule not to add automated bot tests.
+- [ ] Run locales:check, formatting, lint, typecheck and build during implementation.
+- [ ] Release only against compatible backend contracts; keep purchase entry disabled until the
+  production sales-channel decision and backend payment activation are recorded.

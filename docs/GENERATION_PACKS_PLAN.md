@@ -33,24 +33,14 @@ Web Admin implementation, deployment, and activation remain postponed.
   requiring confirmation. Backend concurrency checks are authoritative.
 - Channel/topic limits are global operational policy, not paid tiers. Initial proposed defaults:
   3 active channels and 10 active topics per account; expose limits through the API.
-- Proposed one-time onboarding gift: 5 TEXT and 1 IMAGE credit. Provision idempotently per user;
+- One-time onboarding gift: 3 TEXT and 1 IMAGE credit per backend PRICING.md. Provision idempotently per user;
   do not reset it monthly or on re-login. Keep gifts separate from purchased grants in the ledger.
 
-## Draft catalogue — not a live checkout configuration
+## Pricing source of truth
 
-| Credit type | Quantity | RUB price |
-| --- | ---: | ---: |
-| TEXT | 20 | 99 |
-| TEXT | 50 | 219 |
-| TEXT | 100 | 399 |
-| IMAGE | 10 | 79 |
-| IMAGE | 30 | 219 |
-| IMAGE | 100 | 649 |
-
-Prices are provisional until payment fees/taxes and unit economics are reviewed. Catalogue,
-global resource caps and gift amounts are server-controlled configuration, not client constants.
-An order snapshots pack quantity, credit type, currency, price and catalogue version.
-Existing balances must not be repriced or erased by later catalogue changes.
+Use [backend PRICING.md](https://github.com/DinarSharipov/autobot-backend/blob/dev/docs/PRICING.md).
+Do not duplicate prices or gift constants here. Read the runtime catalogue from backend;
+each order snapshots its quantity, credit type, amount, currency and catalogue version.
 
 ## Backend accounting and payments
 
@@ -136,3 +126,9 @@ Existing balances must not be repriced or erased by later catalogue changes.
 - [ ] Update and manually execute docs/E2E_TEST_CASES.md; record new cases as Не проверено until executed.
   Preserve the repository decision not to add automated tests; run locales:check, formatting, lint,
   typecheck and build when implementing client code.
+
+## Detailed purchase delivery tasks
+
+Repository-specific checkout tasks, shared proposed APIs, dependencies and launch preparation are
+tracked in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#purchase-integration-coordination--2026-10-19).
+All purchase implementation and activation items remain pending.
