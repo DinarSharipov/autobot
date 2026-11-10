@@ -47,7 +47,9 @@ const activeHmacKeyId = safeValue('BOT_SERVICE_ACTIVE_KEY_ID', '');
 const activeHmacSecret = safeValue('BOT_SERVICE_ACTIVE_SECRET', '');
 
 if (Boolean(activeHmacKeyId) !== Boolean(activeHmacSecret)) {
-  throw new Error('BOT_SERVICE_ACTIVE_KEY_ID and BOT_SERVICE_ACTIVE_SECRET must be set together');
+  throw new Error(
+    'BOT_SERVICE_ACTIVE_KEY_ID and BOT_SERVICE_ACTIVE_SECRET must be set together',
+  );
 }
 if (activeHmacSecret && activeHmacSecret.length < 32) {
   throw new Error('BOT_SERVICE_ACTIVE_SECRET must be at least 32 characters');
