@@ -13,19 +13,29 @@ fi
 
 chmod 600 .env.next
 
-if [[ ! -s .env ]]; then
-  echo 'Existing production .env is required to preserve server-side HMAC credentials' >&2
-  exit 1
+if [[ -s .env ]]; then
+  # Keep the existing production HMAC identity during regular image updates.
+  # Remove the GitHub bootstrap copies before appending the authoritative
+  # server-side values to avoid duplicate keys in the updated .env.
+  sed -i '/^BOT_SERVICE_ACTIVE_KEY_ID=/d; /^BOT_SERVICE_ACTIVE_SECRET=/d' .env.next
+  for name in BOT_SERVICE_ACTIVE_KEY_ID BOT_SERVICE_ACTIVE_SECRET; do
+    value="$(awk -F= -v key="$name" '$1 == key { value = substr($0, index($0, "=") + 1) } END { print value }' .env)"
+    if [[ -z "$value" ]]; then
+      echo "Existing production .env is missing $name" >&2
+      exit 1
+    fi
+    printf '%s=%s\n' "$name" "$value" >> .env.next
+  done
+else
+  # A new server has no bot .env; first deploy must receive the same HMAC
+  # credentials as the backend through the production GitHub environment.
+  for name in BOT_SERVICE_ACTIVE_KEY_ID BOT_SERVICE_ACTIVE_SECRET; do
+    if ! grep -q "^$name=.+" .env.next; then
+      echo "First deployment requires $name in the rendered environment" >&2
+      exit 1
+    fi
+  done
 fi
-
-for name in BOT_SERVICE_ACTIVE_KEY_ID BOT_SERVICE_ACTIVE_SECRET; do
-  value="$(awk -F= -v key="$name" '$1 == key { value = substr($0, index($0, "=") + 1) } END { print value }' .env)"
-  if [[ -z "$value" ]]; then
-    echo "Existing production .env is missing $name" >&2
-    exit 1
-  fi
-  printf '%s=%s\n' "$name" "$value" >> .env.next
-done
 
 docker compose -p autobot-bot -f compose.yaml -f compose.prod.yaml \
   --env-file .env.next config --quiet
