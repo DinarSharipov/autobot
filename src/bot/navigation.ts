@@ -1,5 +1,6 @@
 import type { BotContext } from './context.js';
 import { Composer } from 'grammy';
+import { showBalance } from './balance.js';
 
 import type { BackendClient } from '../backend/client.js';
 import { showChannels } from './channels.js';
@@ -22,6 +23,7 @@ type SectionHandler = (
 ) => Promise<void>;
 
 const sectionHandlers: Record<SectionId, SectionHandler> = {
+  balance: showBalance,
   topics: showTopics,
   channels: showChannels,
   posts: showPosts,

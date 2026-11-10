@@ -1,6 +1,6 @@
 # AGENTS.md
 
-> Product decision (2026-10-19): [Generation packs and prepaid balances](GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. The transition is planned, not implemented. Legacy behavior and historical verification below must not be treated as the new billing contract.
+> Product decision (2026-10-19): [Generation packs and prepaid balances](GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. Backend support and the bot client slice are implemented; production activation and live acceptance remain pending. Legacy behavior and historical verification below must not be treated as the new billing contract.
 
 ## Project
 Autobot is a Telegram-first service for creating, scheduling, moderating, and publishing AI-generated posts to Telegram channels.

@@ -1,4 +1,111 @@
 # User-facing text. Keep message IDs and variable names aligned across locales.
+section-balance = Balance
+checkout-select = Select: { $summary }
+checkout-packs-page =
+    Test catalogue · page { $page }
+
+    { $items }
+
+    Test payments only. Select a pack, then review the created order price.
+checkout-open = Continue test purchase
+checkout-check = Check payment
+checkout-recover = Recover payment link
+checkout-start = Confirm price and create test payment
+checkout-link = Open test payment
+checkout-fulfilled = The service confirms the pack was credited. Open Balance to see current balances.
+checkout-refunded-full = Full refund: { $amount }. Credits revoked: { $units }. Check Balance for current credits and debt.
+checkout-refunded-partial = Partial refund: { $amount }. Credits revoked: { $units }. Check Balance for current credits and debt.
+checkout-link-unavailable = The payment link is unavailable or invalid. Recover the link or check the same payment status.
+error-backend-response = The service returned an invalid response. Retry for the same order or open order history instead of creating another purchase.
+checkout-awaiting-grant = Payment confirmed; crediting is still pending. Check again later.
+checkout-terminal = Payment ended without crediting. See the order card for details.
+checkout-review = Review the pack and final order price before creating a test payment.
+checkout-pending = Payment is not confirmed yet. Returning from the payment page does not confirm crediting.
+checkout-order =
+    Test order { $id }
+    { $type }: { $units } generations — { $price }
+
+    { $message }
+checkout-disabled = Test purchases are disabled. Order history is available under Balance.
+checkout-stale = The catalogue changed. Open it again. If you already created an order, check order history first.
+checkout-retry = Retry the same request
+error-checkout-not-allowed = Test payment is unavailable for this account.
+error-checkout-disabled = Test payment is disabled on the server.
+error-payment-provider = The payment service result could not be verified. Retry for the same order instead of creating another one.
+error-payment-reconciliation = This payment needs support review. Do not create a duplicate order.
+error-payment-verification = Payment verification failed. Crediting is not confirmed; contact support.
+error-payment-not-confirmed = Payment has not been created or this order cannot be paid. Refresh the order card.
+error-pack-unavailable = This pack is no longer available. Refresh the catalogue.
+billing-catalogue = Pack catalogue
+billing-refresh-order = Refresh order
+billing-orders = Order history
+billing-previous = Previous
+billing-next = Next
+billing-empty = Nothing here yet.
+billing-pack = { $type }: { $units } generations — { $price }
+billing-packs-page =
+    Pack catalogue · page { $page }
+
+    { $items }
+
+    Purchases are not available yet.
+billing-orders-page =
+    Latest orders (up to 100) · page { $page }
+
+    { $items }
+billing-open-order = Order { $id }
+billing-order-summary =
+    { $summary } · { $date }
+    Payment: { $payment }; credit grant: { $fulfillment }
+billing-order-page =
+    Order { $id }
+    Created: { $date }
+    { $type }: { $units } generations — { $price }
+    Order: { $status }
+    Payment: { $payment }
+    Credit grant: { $fulfillment }
+    Refund: { $refund }
+    Money refunded: { $refunded }; credits revoked: { $refundedUnits }
+billing-pending = pending
+billing-awaiting-payment = awaiting payment
+billing-paid = paid
+billing-not-created = payment not created
+billing-succeeded = succeeded
+billing-fulfilled = credited
+billing-refund-none = none
+billing-refund-partial = partial
+billing-refund-full = full
+error-order-not-found = Order not found or unavailable. Refresh order history.
+balance-text = TEXT
+balance-image = IMAGE
+balance-wallet =
+    { $type }: available { $available }
+    Reserved: { $reserved }; debt: { $debt }
+balance-missing = { $type }: no data
+balance-page =
+    Generation balance
+
+    { $wallets }
+
+    Existing limits apply until the transition is complete. Purchases are not available yet.
+balance-refresh = Refresh balance
+balance-history-action = Operation history
+balance-history =
+    Latest operations (up to 10):
+
+    { $entries }
+balance-history-empty = No operations yet.
+balance-history-item =
+    { $date } — { $kind }
+    { $type }: { $units }
+balance-kind-gift = Gift
+balance-kind-purchase = Purchase
+balance-kind-reserve = Reservation
+balance-kind-commit = Reservation spent
+balance-kind-release = Reservation released
+balance-kind-refund = Refund: credits revoked
+balance-kind-adjustment = Adjustment
+balance-kind-unknown = Operation
 
 channels-connect = Connect channel
 channels-ask-username = Send the channel @username or a link such as https://t.me/channel.
@@ -34,6 +141,16 @@ error-date-offset = The date must include a time zone offset, such as +03:00.
 error-timezone = Unknown time zone.
 error-moderation-pending = The text is not ready for moderation. Refresh the list later.
 error-stale-resource = The data has changed. Reopen the section and try again.
+error-cost-confirmation-required = Review the cost and confirm it before continuing.
+error-insufficient-text-credits = There are not enough TEXT credits for this action. Top up your balance and try again.
+error-insufficient-image-credits = There are not enough IMAGE credits for this image. Top up your balance and try again.
+error-media-generation-in-progress = This image is already being generated. Wait for it to finish, then refresh the list.
+error-media-outdated = This image was generated for an earlier text version. Refresh and select a current image.
+error-media-unavailable = This image is unavailable. Refresh the list and select another one.
+error-media-not-mutable = Images for this publication cannot be changed right now.
+error-media-not-found = This image could not be found. Refresh the list.
+error-media-not-resumable = This image generation cannot be resumed. Refresh the list.
+error-media-upload-unknown = The image upload could not be confirmed. Refresh the list before retrying.
 error-schedule-not-editable = This schedule cannot be changed in its current state.
 error-schedule-not-found = The schedule could not be found. Refresh the list.
 error-post-not-publishable = This post cannot be published right now.
@@ -42,6 +159,22 @@ action-back-home = Back to home
 action-create-post = Create post
 action-open-web-admin = Open Web Admin
 moderation-ask-feedback = Describe the changes you want (up to 4,000 characters).
+moderation-paid-cost = This revision costs { $units } TEXT. Available: { $available }. Confirm before sending your feedback.
+moderation-included-cost = This revision is included. Included revisions remaining: { $included }.
+moderation-continue = Continue
+moderation-images = Images
+moderation-media-page = Images: { $count }; selected: { $selected }. A replacement costs 1 IMAGE.
+moderation-no-image = none selected
+moderation-select-image = Select image ({ $status })
+moderation-image-selected = selected
+moderation-image-ready = ready
+moderation-image-pending = processing
+moderation-image-blocked = insufficient IMAGE
+moderation-generate-image = Generate replacement — 1 IMAGE
+moderation-image-cost = Generating or replacing an image costs { $units } IMAGE. Available: { $available }. Confirm the charge.
+moderation-confirm-image = Confirm 1 IMAGE
+moderation-image-requested = Image generation started. The preview will appear in Telegram when ready.
+moderation-image-selected-result = Image selected for publication.
 validation-feedback = The feedback must contain between 1 and 4,000 characters.
 moderation-revision-requested = New version requested. Publication status: { $status }.
 moderation-empty = No posts awaiting moderation.

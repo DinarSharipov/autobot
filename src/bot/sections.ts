@@ -1,5 +1,6 @@
 /** Stable IDs and commands never depend on the user's language. */
 export const SECTIONS = [
+  { id: 'balance', labelKey: 'section-balance', command: 'balance' },
   { id: 'topics', labelKey: 'section-topics', command: 'topics' },
   { id: 'channels', labelKey: 'section-channels', command: 'channels' },
   { id: 'posts', labelKey: 'section-posts', command: 'posts' },

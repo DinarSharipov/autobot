@@ -1,6 +1,6 @@
 # Autobot Bot
 
-> Product decision (2026-10-19): [Generation packs and prepaid balances](docs/GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. The transition is planned, not implemented. Legacy behavior and historical verification below must not be treated as the new billing contract.
+> Product decision (2026-10-19): [Generation packs and prepaid balances](docs/GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. Backend support and the bot client slice are implemented; production activation and live acceptance remain pending. Legacy behavior and historical verification below must not be treated as the new billing contract.
 
 grammY service for the Autobot project. The bot resolves Telegram users through
 the backend and provides Telegram UI for channels, topics, post generation,
@@ -31,6 +31,9 @@ standalone Web Admin is introduced later, setting it to its public URL will show
 button in the bot’s main menu.
 
 ## Validation
+Isolated test checkout is disabled by default and unavailable in production mode.
+See [test checkout client](docs/TEST_CHECKOUT_CLIENT.md) for setup and acceptance.
+
 
 ```bash
 npm run locales:check

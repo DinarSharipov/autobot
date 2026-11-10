@@ -1,4 +1,111 @@
 # User-facing text. Keep message IDs and variable names aligned across locales.
+section-balance = Баланс
+checkout-select = Выбрать: { $summary }
+checkout-packs-page =
+    Тестовый каталог · страница { $page }
+
+    { $items }
+
+    Только тестовая оплата. Выберите пакет, затем проверьте цену созданного заказа.
+checkout-open = Продолжить тестовую покупку
+checkout-check = Проверить оплату
+checkout-recover = Восстановить ссылку
+checkout-start = Подтвердить цену и создать тестовый платёж
+checkout-link = Открыть тестовую оплату
+checkout-fulfilled = Пакет зачислен по данным сервиса. Откройте баланс, чтобы увидеть текущие остатки.
+checkout-refunded-full = Оформлен полный возврат: { $amount }. Отозвано кредитов: { $units }. Текущий остаток и задолженность доступны в балансе.
+checkout-refunded-partial = Оформлен частичный возврат: { $amount }. Отозвано кредитов: { $units }. Текущий остаток и задолженность доступны в балансе.
+checkout-link-unavailable = Ссылка оплаты недоступна или некорректна. Можно восстановить ссылку или проверить состояние того же платежа.
+error-backend-response = Сервис вернул некорректный ответ. Повторите запрос для того же заказа или откройте историю, не создавая новую покупку.
+checkout-awaiting-grant = Оплата подтверждена, зачисление ещё не завершено. Проверьте позднее.
+checkout-terminal = Платёж завершён без зачисления. Подробный статус доступен в карточке заказа.
+checkout-review = Проверьте пакет и окончательную цену заказа перед созданием тестового платежа.
+checkout-pending = Оплата ещё не подтверждена. Возврат по ссылке сам по себе не означает зачисление.
+checkout-order =
+    Тестовый заказ { $id }
+    { $type }: { $units } генераций — { $price }
+
+    { $message }
+checkout-disabled = Тестовые покупки выключены. История заказов доступна в разделе «Баланс».
+checkout-stale = Каталог изменился. Откройте его заново. Если заказ уже создавался, сначала проверьте историю заказов.
+checkout-retry = Повторить тот же запрос
+error-checkout-not-allowed = Тестовая оплата недоступна для этого аккаунта.
+error-checkout-disabled = Тестовая оплата выключена на сервере.
+error-payment-provider = Не удалось проверить результат обращения к платёжному сервису. Повторите запрос для того же заказа, не создавая новый.
+error-payment-reconciliation = Платёж требует проверки службой поддержки. Не создавайте повторный заказ.
+error-payment-verification = Платёж не прошёл проверку. Зачисление не подтверждено; обратитесь в поддержку.
+error-payment-not-confirmed = Платёж ещё не создан или заказ больше не допускает оплату. Обновите карточку заказа.
+error-pack-unavailable = Пакет больше недоступен. Обновите каталог.
+billing-catalogue = Каталог пакетов
+billing-refresh-order = Обновить заказ
+billing-orders = История заказов
+billing-previous = Назад
+billing-next = Далее
+billing-empty = Пока ничего нет.
+billing-pack = { $type }: { $units } генераций — { $price }
+billing-packs-page =
+    Каталог пакетов · страница { $page }
+
+    { $items }
+
+    Покупки пока недоступны.
+billing-orders-page =
+    Последние заказы (до 100) · страница { $page }
+
+    { $items }
+billing-open-order = Заказ { $id }
+billing-order-summary =
+    { $summary } · { $date }
+    Оплата: { $payment }; зачисление: { $fulfillment }
+billing-order-page =
+    Заказ { $id }
+    Создан: { $date }
+    { $type }: { $units } генераций — { $price }
+    Заказ: { $status }
+    Оплата: { $payment }
+    Зачисление: { $fulfillment }
+    Возврат: { $refund }
+    Возвращено денег: { $refunded }; отозвано кредитов: { $refundedUnits }
+billing-pending = ожидает обработки
+billing-awaiting-payment = ожидает оплаты
+billing-paid = оплачен
+billing-not-created = платёж не создан
+billing-succeeded = успешно
+billing-fulfilled = зачислено
+billing-refund-none = нет
+billing-refund-partial = частичный
+billing-refund-full = полный
+error-order-not-found = Заказ не найден или недоступен. Обновите историю заказов.
+balance-text = TEXT
+balance-image = IMAGE
+balance-wallet =
+    { $type }: доступно { $available }
+    В резерве: { $reserved }; задолженность: { $debt }
+balance-missing = { $type }: нет данных
+balance-page =
+    Баланс генераций
+
+    { $wallets }
+
+    До завершения перехода действуют прежние лимиты. Покупки пока недоступны.
+balance-refresh = Обновить баланс
+balance-history-action = История операций
+balance-history =
+    Последние операции (до 10):
+
+    { $entries }
+balance-history-empty = Операций пока нет.
+balance-history-item =
+    { $date } — { $kind }
+    { $type }: { $units }
+balance-kind-gift = Подарок
+balance-kind-purchase = Покупка
+balance-kind-reserve = Резервирование
+balance-kind-commit = Списание резерва
+balance-kind-release = Освобождение резерва
+balance-kind-refund = Возврат: отзыв кредитов
+balance-kind-adjustment = Корректировка
+balance-kind-unknown = Операция
 
 channels-connect = Подключить канал
 channels-ask-username = Отправьте @username канала или ссылку вида https://t.me/channel.
@@ -34,6 +141,16 @@ error-date-offset = Дата должна содержать часовой по
 error-timezone = Неизвестный часовой пояс.
 error-moderation-pending = Текст ещё не готов к модерации. Попробуйте обновить список позже.
 error-stale-resource = Данные уже изменились. Откройте раздел заново и повторите действие.
+error-cost-confirmation-required = Перед этим действием нужно проверить стоимость и подтвердить списание.
+error-insufficient-text-credits = Недостаточно TEXT для этой операции. Пополните баланс и повторите действие.
+error-insufficient-image-credits = Недостаточно IMAGE для этого изображения. Пополните баланс и повторите действие.
+error-media-generation-in-progress = Изображение уже создаётся. Дождитесь завершения и обновите список.
+error-media-outdated = Это изображение создано для предыдущей версии текста. Обновите список и выберите актуальное.
+error-media-unavailable = Это изображение недоступно. Обновите список и выберите другое.
+error-media-not-mutable = Изображения этой публикации сейчас нельзя изменить.
+error-media-not-found = Изображение больше не найдено. Обновите список.
+error-media-not-resumable = Генерацию этого изображения нельзя возобновить. Обновите список.
+error-media-upload-unknown = Не удалось подтвердить загрузку изображения. Обновите список перед повтором.
 error-schedule-not-editable = Это расписание уже нельзя изменить в текущем состоянии.
 error-schedule-not-found = Расписание больше не найдено. Обновите список.
 error-post-not-publishable = Пост сейчас нельзя опубликовать.
@@ -42,6 +159,22 @@ action-back-home = На главную
 action-create-post = Создать пост
 action-open-web-admin = Открыть Web Admin
 moderation-ask-feedback = Опишите, что изменить в тексте (до 4000 символов).
+moderation-paid-cost = Дополнительная правка спишет { $units } TEXT. Доступно: { $available }. Подтвердите действие перед отправкой комментария.
+moderation-included-cost = Правка входит в лимит. Осталось включённых правок: { $included }.
+moderation-continue = Продолжить
+moderation-images = Изображения
+moderation-media-page = Изображений: { $count }; выбрано: { $selected }. Генерация замены стоит 1 IMAGE.
+moderation-no-image = не выбрано
+moderation-select-image = Выбрать изображение ({ $status })
+moderation-image-selected = выбрано
+moderation-image-ready = готово
+moderation-image-pending = в обработке
+moderation-image-blocked = недостаточно IMAGE
+moderation-generate-image = Создать замену — 1 IMAGE
+moderation-image-cost = Создание или замена изображения стоит { $units } IMAGE. Доступно: { $available }. Подтвердите списание.
+moderation-confirm-image = Подтвердить 1 IMAGE
+moderation-image-requested = Генерация изображения запущена. Предпросмотр появится в Telegram после обработки.
+moderation-image-selected-result = Изображение выбрано для публикации.
 validation-feedback = Комментарий должен содержать от 1 до 4000 символов.
 moderation-revision-requested = Новая версия запрошена. Статус публикации: { $status }.
 moderation-empty = Постов, ожидающих модерации, нет.

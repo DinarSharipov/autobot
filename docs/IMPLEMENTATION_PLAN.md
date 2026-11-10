@@ -1,8 +1,15 @@
 # IMPLEMENTATION_PLAN.md
 
-> Product decision (2026-10-19): [Generation packs and prepaid balances](GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. The transition is planned, not implemented. Legacy behavior and historical verification below must not be treated as the new billing contract.
+> Product decision (2026-10-19): [Generation packs and prepaid balances](GENERATION_PACKS_PLAN.md) supersedes subscription tiers/monthly quotas and the old exclusion of image preview. Backend support and the bot client slice are implemented; production activation and live acceptance remain pending. Legacy behavior and historical verification below must not be treated as the new billing contract.
 
 ## Goal
+Non-production test checkout is implemented behind a default-off flag; see
+[TEST_CHECKOUT_CLIENT.md](TEST_CHECKOUT_CLIENT.md) for the contract, recovery and acceptance.
+Production activation and durable asynchronous payment notifications remain pending.
+
+See [BALANCE_CLIENT.md](BALANCE_CLIENT.md) for the first client slice and concrete backend
+routes, which supersede the proposed `/billing/*` paths below.
+
 Build the grammY Telegram client for Autobot while keeping all domain logic in `autobot-backend` and interoperating with the standalone `autobot-web` client.
 
 > **Current product scope:** development and deployment of the Web Admin are postponed. The
@@ -112,7 +119,7 @@ Use [GENERATION_PACKS_PLAN.md](GENERATION_PACKS_PLAN.md) as the billing contract
 
 ## Purchase integration coordination — 2026-10-19
 
-Status: planned only; this documentation does not activate checkout or deploy billing.
+Status: partially implemented in the bot. Balance/catalogue/order read views and prepaid moderation controls are connected. Isolated test checkout is opt-in; production sales activation remains pending.
 Backend owns prices, orders, payment verification and credit accounting. Clients only display
 backend state. Canonical prices and the one-time gift (3 TEXT + 1 IMAGE) are maintained in
 [backend PRICING.md](https://github.com/DinarSharipov/autobot-backend/blob/dev/docs/PRICING.md);
@@ -127,43 +134,26 @@ remove that requirement. Record the production sales-channel decision before ena
 purchase entry point. Keep payment adapters separate from wallet accounting.
 Reference: https://core.telegram.org/bots/payments-stars
 
-Proposed shared contracts (finalize in backend OpenAPI before implementation):
-- GET /api/v1/billing/packs: server catalogue, version, credit type, quantity, RUB amount.
-- GET /api/v1/billing/balance: available/reserved TEXT and IMAGE.
-- POST /api/v1/billing/orders: pack ID, catalogue version and stable idempotency key;
-  derive owner from authenticated identity and calculate price server-side.
-- GET /api/v1/billing/orders and GET /api/v1/billing/orders/{id}: owned purchase history/status,
-  payment status, fulfillment status, confirmation URL when applicable.
-- GET /api/v1/billing/ledger: owned credit-operation history.
-- POST /api/v1/billing/webhooks/yookassa: provider notification endpoint, independently verified;
-  not protected by bot HMAC or browser session middleware.
-Routes are proposals, not implemented endpoints. Payment status and credit fulfillment status
-must be distinguishable; clients never infer a grant from a redirect or provider status alone.
+The concrete contracts are implemented in `autobot-backend` and documented in
+[BALANCE_CLIENT.md](BALANCE_CLIENT.md), [TEST_CHECKOUT_CLIENT.md](TEST_CHECKOUT_CLIENT.md),
+and the backend's [BILLING_TEST_CHECKOUT.md](https://github.com/DinarSharipov/autobot-backend/blob/dev/docs/BILLING_TEST_CHECKOUT.md).
+The earlier `/billing/*` route list below this plan is historical and superseded by those documents.
+Payment status and credit fulfillment status remain distinct; clients never infer a grant from a redirect.
 
 ### Telegram client implementation checklist
 
-- [ ] Replace subscription navigation with Balance, Buy texts, Buy images, Orders/history.
-  Obtain prices, quantities, gift information and balances from backend, without local constants.
-- [ ] Extend the typed HMAC backend client with catalogue, balances, create-order, owned order
-  status/history and ledger contracts. Keep YooKassa credentials/API/webhooks out of this repo.
-- [ ] Show pack quantity and exact RUB price before creating an order. Persist/reuse the same
-  purchase operation key for retries and duplicate callbacks; a deliberate new purchase is separate.
-- [ ] Display hosted confirmation_url returned by backend and a Check payment action for that
-  order. Show pending/canceled/verification-delayed/paid-but-not-yet-credited/fulfilled states.
-  Returning to the bot or pressing Check payment must never grant credits locally.
-- [ ] Recover pending purchases from backend after bot restart; handle stale callbacks, ownership
-  errors, changed catalogue versions and already fulfilled orders without creating duplicate orders.
+- [x] Add Balance, backend-priced catalogue, Orders/history navigation. Values come from backend without local price or gift constants.
+- [x] Extend the typed HMAC backend client with catalogue, balances, order creation/status/history and ledger contracts. Keep YooKassa credentials/API/webhooks out of this repo.
+- [x] For isolated test checkout, show server price and persist/reuse order idempotency across callback retries. Enable only in an isolated nonproduction environment with backend test checkout and explicit allowlist.
+- [x] Test-only checkout UI supports server confirmation URL and server payment check; never grant locally. Production sales channel remains undecided.
+- [x] Recover owned orders from backend after restart, use server pack fingerprints to reject stale catalogue callbacks, and reuse stable order idempotency per callback.
 - [ ] Integrate durable payment-result notifications with the backend-owned delivery contract.
   Refresh balances after fulfillment; handle blocked bot/message delivery independently of payment.
 - [ ] For insufficient balance show the relevant TEXT/IMAGE top-up and retain the blocked operation
   reference. Resume through backend after confirmed funds; do not silently auto-buy or auto-spend.
-- [ ] Show remaining included text revisions and explicitly confirm 1 TEXT for extra revisions
-  and 1 IMAGE for every image replacement using backend cost/version checks.
-- [ ] Register small billing handlers through shared navigation/section registry, preserve the
-  main keyboard and clear transient flows on navigation. Localize all messages in RU/EN Fluent.
-- [ ] Update manual E2E checklist/status for successful/canceled/pending payments, repeated clicks,
-  redirect without payment, restart, wrong order owner, delayed grant and post-top-up resume.
-  Start cases as Не проверено; preserve the rule not to add automated bot tests.
-- [ ] Run locales:check, formatting, lint, typecheck and build during implementation.
+- [x] Explicitly confirm paid TEXT revisions and each 1 IMAGE replacement using backend cost/version checks; keep selected-image actions bound to publication version.
+- [x] Register billing handlers through shared navigation/section registry, preserve the main keyboard and localize all messages in RU/EN Fluent.
+- [x] Update manual E2E checklist/status for payments, balance, revisions and media. Telegram runs remain Не проверено until performed; no automated bot tests added.
+- [x] Run locales:check, changed-file formatting, lint, typecheck and build.
 - [ ] Release only against compatible backend contracts; keep purchase entry disabled until the
   production sales-channel decision and backend payment activation are recorded.

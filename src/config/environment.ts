@@ -8,6 +8,7 @@ const environmentSchema = z.object({
   BOT_SERVICE_ACTIVE_KEY_ID: z.string().trim().min(1).optional(),
   BOT_SERVICE_ACTIVE_SECRET: z.string().trim().min(32).optional(),
   BUILD_SHA: z.string().trim().min(1).default('development'),
+  BOT_TEST_CHECKOUT_ENABLED: z.enum(['true', 'false']).default('false'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
@@ -24,6 +25,7 @@ export type Environment = {
   botServiceActiveKeyId: string | undefined;
   botServiceActiveSecret: string | undefined;
   buildSha: string;
+  testCheckoutEnabled: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   nodeEnv: 'development' | 'test' | 'production';
   telegramToken: string;
@@ -32,12 +34,21 @@ export type Environment = {
 
 export function parseEnvironment(source: NodeJS.ProcessEnv): Environment {
   const parsed = environmentSchema.parse(source);
+  if (
+    parsed.BOT_TEST_CHECKOUT_ENABLED === 'true' &&
+    parsed.NODE_ENV === 'production'
+  ) {
+    throw new Error(
+      'Test checkout requires an isolated non-production environment',
+    );
+  }
 
   return {
     backendUrl: parsed.BACKEND_URL,
     botServiceActiveKeyId: parsed.BOT_SERVICE_ACTIVE_KEY_ID,
     botServiceActiveSecret: parsed.BOT_SERVICE_ACTIVE_SECRET,
     buildSha: parsed.BUILD_SHA,
+    testCheckoutEnabled: parsed.BOT_TEST_CHECKOUT_ENABLED === 'true',
     logLevel: parsed.LOG_LEVEL,
     nodeEnv: parsed.NODE_ENV,
     telegramToken: parsed.TELEGRAM_TOKEN,

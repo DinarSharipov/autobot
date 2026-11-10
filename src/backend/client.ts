@@ -1,4 +1,18 @@
 import { createHash, createHmac, randomUUID } from 'node:crypto';
+import type { ZodType } from 'zod';
+import {
+  walletsResponseSchema,
+  packsResponseSchema,
+  ordersResponseSchema,
+  orderResponseSchema,
+  ledgerResponseSchema,
+} from './billing.js';
+import type {
+  CreditLedgerEntry,
+  GenerationWallet,
+  GenerationPack,
+  PurchaseOrder,
+} from './billing.js';
 
 export type BackendClientOptions = {
   baseUrl: string;
@@ -106,6 +120,60 @@ export type ModerationRequest = {
   status:
     'APPROVED' | 'CANCELLED' | 'PENDING' | 'REJECTED' | 'REVISION_REQUESTED';
   version: number;
+};
+
+export type RevisionCostPreview = {
+  action: 'INCLUDED_REVISION' | 'PAID_REVISION';
+  available: number;
+  costConfirmationId: string;
+  debt: number;
+  expiresAt: string;
+  includedRemaining: number;
+  moderationRequestId: string;
+  moderationVersion: number;
+  publicationId: string;
+  units: 0 | 1;
+};
+
+export type PublicationMedia = {
+  approvedTextVersionId: string | null;
+  createdAt: string;
+  errorCode: string | null;
+  generationStatus:
+    | 'QUEUED'
+    | 'RUNNING'
+    | 'UPLOADING'
+    | 'READY'
+    | 'BLOCKED_FUNDS'
+    | 'FAILED'
+    | 'UPLOAD_UNKNOWN';
+  id: string;
+  isOutdated: boolean;
+  publicationId: string;
+  selectionIsCurrent: boolean;
+  sourceVersionId: string | null;
+  status: 'PENDING' | 'READY' | 'SELECTED' | 'REJECTED' | 'UNAVAILABLE';
+  telegramFileId: string | null;
+  telegramFileUniqueId: string | null;
+  telegramChatId: string | null;
+  telegramMessageId: string | null;
+};
+
+export type PublicationMediaList = {
+  items: PublicationMedia[];
+  publicationId: string;
+  publicationVersion: number;
+  selectedMediaId: string | null;
+};
+
+export type MediaCostPreview = {
+  available: number;
+  costConfirmationId: string;
+  debt: number;
+  expiresAt: string;
+  publicationId: string;
+  publicationVersion: number;
+  textVersionId: string;
 };
 
 export type Schedule = {
@@ -234,6 +302,107 @@ export class BackendClient {
         body: profile,
       },
     );
+  }
+
+  async getWallets(telegramUserId: string): Promise<GenerationWallet[]> {
+    const response = await this.request<ApiEnvelope<GenerationWallet[]>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/wallets',
+      {},
+      walletsResponseSchema,
+    );
+    return response.data;
+  }
+
+  async getGenerationPacks(telegramUserId: string): Promise<GenerationPack[]> {
+    const response = await this.request<ApiEnvelope<GenerationPack[]>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/generation-packs',
+      {},
+      packsResponseSchema,
+    );
+    return response.data;
+  }
+
+  async getPurchaseOrders(telegramUserId: string): Promise<PurchaseOrder[]> {
+    const response = await this.request<ApiEnvelope<PurchaseOrder[]>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/purchase-orders',
+      {},
+      ordersResponseSchema,
+    );
+    return response.data;
+  }
+
+  async createPurchaseOrder(
+    telegramUserId: string,
+    packCode: string,
+    idempotencyKey: string,
+  ): Promise<PurchaseOrder> {
+    const response = await this.request<ApiEnvelope<PurchaseOrder>>(
+      telegramUserId,
+      'POST',
+      '/api/v1/purchase-orders',
+      { body: { packCode }, idempotencyKey },
+      orderResponseSchema,
+    );
+    return response.data;
+  }
+
+  async createTestPayment(
+    telegramUserId: string,
+    orderId: string,
+  ): Promise<PurchaseOrder> {
+    const response = await this.request<ApiEnvelope<PurchaseOrder>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/purchase-orders/${encodeURIComponent(orderId)}/payment`,
+      {},
+      orderResponseSchema,
+    );
+    return response.data;
+  }
+
+  async checkTestPayment(
+    telegramUserId: string,
+    orderId: string,
+  ): Promise<PurchaseOrder> {
+    const response = await this.request<ApiEnvelope<PurchaseOrder>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/purchase-orders/${encodeURIComponent(orderId)}/payment/check`,
+      {},
+      orderResponseSchema,
+    );
+    return response.data;
+  }
+
+  async getPurchaseOrder(
+    telegramUserId: string,
+    orderId: string,
+  ): Promise<PurchaseOrder> {
+    const response = await this.request<ApiEnvelope<PurchaseOrder>>(
+      telegramUserId,
+      'GET',
+      `/api/v1/purchase-orders/${encodeURIComponent(orderId)}`,
+      {},
+      orderResponseSchema,
+    );
+    return response.data;
+  }
+
+  async getWalletLedger(telegramUserId: string): Promise<CreditLedgerEntry[]> {
+    const response = await this.request<ApiEnvelope<CreditLedgerEntry[]>>(
+      telegramUserId,
+      'GET',
+      '/api/v1/wallets/ledger?limit=10',
+      {},
+      ledgerResponseSchema,
+    );
+    return response.data;
   }
 
   async getSubscription(telegramUserId: string): Promise<Subscription> {
@@ -443,12 +612,97 @@ export class BackendClient {
     requestId: string,
     version: number,
     feedback: string,
+    costConfirmationId: string,
+    idempotencyKey: string,
   ): Promise<Publication> {
     const response = await this.request<ApiEnvelope<Publication>>(
       telegramUserId,
       'POST',
       `/api/v1/moderation/${requestId}/revision`,
-      { body: { feedback }, idempotencyKey: randomUUID(), ifMatch: version },
+      {
+        body: {
+          feedback,
+          ...(costConfirmationId ? { costConfirmationId } : {}),
+        },
+        idempotencyKey,
+        ifMatch: version,
+      },
+    );
+    return response.data;
+  }
+
+  async previewRevisionCost(
+    telegramUserId: string,
+    publicationId: string,
+  ): Promise<RevisionCostPreview> {
+    const response = await this.request<ApiEnvelope<RevisionCostPreview>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}/generation-cost-preview`,
+      { idempotencyKey: randomUUID() },
+    );
+    return response.data;
+  }
+
+  async listPublicationMedia(
+    telegramUserId: string,
+    publicationId: string,
+  ): Promise<PublicationMediaList> {
+    const response = await this.request<ApiEnvelope<PublicationMediaList>>(
+      telegramUserId,
+      'GET',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}/media`,
+    );
+    return response.data;
+  }
+
+  async previewMediaCost(
+    telegramUserId: string,
+    publicationId: string,
+  ): Promise<MediaCostPreview> {
+    const response = await this.request<ApiEnvelope<MediaCostPreview>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}/media/cost-preview`,
+      { idempotencyKey: randomUUID() },
+    );
+    return response.data;
+  }
+
+  async requestPublicationMedia(
+    telegramUserId: string,
+    publicationId: string,
+    version: number,
+    costConfirmationId: string,
+  ): Promise<PublicationMedia> {
+    const response = await this.request<ApiEnvelope<PublicationMedia>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}/media`,
+      {
+        body: { costConfirmationId },
+        idempotencyKey: randomUUID(),
+        ifMatch: version,
+      },
+    );
+    return response.data;
+  }
+
+  async selectPublicationMedia(
+    telegramUserId: string,
+    publicationId: string,
+    mediaId: string,
+    version: number,
+  ): Promise<PublicationMedia> {
+    const response = await this.request<ApiEnvelope<PublicationMedia>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}/media/${encodeURIComponent(mediaId)}/select`,
+      {
+        body: { keepOutdated: false },
+        idempotencyKey: randomUUID(),
+        ifMatch: version,
+      },
     );
     return response.data;
   }
@@ -621,13 +875,20 @@ export class BackendClient {
     method: 'DELETE' | 'GET' | 'PATCH' | 'POST',
     path: string,
     options: { body?: unknown; idempotencyKey?: string; ifMatch?: number } = {},
+    responseSchema?: ZodType<T>,
   ): Promise<T> {
     const maximumAttempts =
       method === 'GET' || options.idempotencyKey !== undefined ? 3 : 1;
 
     for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
       try {
-        return await this.requestOnce(telegramUserId, method, path, options);
+        return await this.requestOnce(
+          telegramUserId,
+          method,
+          path,
+          options,
+          responseSchema,
+        );
       } catch (error) {
         if (
           !(error instanceof BackendApiError) ||
@@ -648,6 +909,7 @@ export class BackendClient {
     method: 'DELETE' | 'GET' | 'PATCH' | 'POST',
     path: string,
     options: { body?: unknown; idempotencyKey?: string; ifMatch?: number } = {},
+    responseSchema?: ZodType<T>,
   ): Promise<T> {
     if (!this.keyId || !this.secret) {
       throw new BackendApiError('BOT_INTEGRATION_NOT_CONFIGURED', 503);
@@ -690,6 +952,7 @@ export class BackendClient {
     }
 
     let response: Response;
+    let text: string;
     try {
       const request: RequestInit = {
         headers,
@@ -700,12 +963,21 @@ export class BackendClient {
         request.body = body;
       }
       response = await fetch(new URL(path, this.baseUrl), request);
+      text = await response.text();
     } catch {
       throw new BackendApiError('BACKEND_UNAVAILABLE', 503);
     }
 
-    const text = await response.text();
-    const payload: unknown = text ? JSON.parse(text) : undefined;
+    let payload: unknown;
+    try {
+      payload = text ? JSON.parse(text) : undefined;
+    } catch {
+      // Retain HTTP semantics for proxy/auth errors; never expose their response body.
+      throw new BackendApiError(
+        'BACKEND_INVALID_RESPONSE',
+        response.ok ? 502 : response.status,
+      );
+    }
     if (!response.ok) {
       const error = readErrorPayload(payload).error;
       throw new BackendApiError(
@@ -714,6 +986,12 @@ export class BackendClient {
       );
     }
 
+    if (responseSchema) {
+      const parsed = responseSchema.safeParse(payload);
+      if (!parsed.success)
+        throw new BackendApiError('BACKEND_INVALID_RESPONSE', 502);
+      return parsed.data;
+    }
     return payload as T;
   }
 }

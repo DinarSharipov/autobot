@@ -1,15 +1,60 @@
 # E2E-тесты Telegram-бота
 
+## Юзкейсы покупок — 2026-11-10
+
+Подробные предусловия, шаги, альтернативы и ожидаемое состояние backend:
+[PURCHASE_USE_CASES.md](PURCHASE_USE_CASES.md). Краткие CHECKOUT-001…008 из
+[TEST_CHECKOUT_CLIENT.md](TEST_CHECKOUT_CLIENT.md) покрываются этими сценариями;
+повторный независимый прогон одинаковых шагов не требуется.
+
+| ID | Юзкейс |
+| --- | --- |
+| UC-PURCHASE-01 | Баланс, операции и однократный подарок |
+| UC-PURCHASE-02 | Каталог и окончательная цена заказа |
+| UC-PURCHASE-03 | Успешная тестовая покупка TEXT/IMAGE |
+| UC-PURCHASE-04 | Возврат без оплаты, отмена, истечение |
+| UC-PURCHASE-05 | Повторные клики и сетевые ошибки |
+| UC-PURCHASE-06 | Восстановление после перезапуска |
+| UC-PURCHASE-07 | Задержанная проверка и зачисление |
+| UC-PURCHASE-08 | Изменение каталога и гонка цены |
+| UC-PURCHASE-09 | Отключение checkout, allowlist, чужой заказ |
+| UC-PURCHASE-10 | Ошибки провайдера и ручная сверка |
+| UC-PURCHASE-11 | Повторные и несвоевременные webhook/check |
+| UC-PURCHASE-12 | Частичный/полный возврат и долг |
+| UC-PURCHASE-13 | RU/EN, навигация и пагинация |
+| UC-PURCHASE-14 | Пополнение и явное возобновление генерации |
+| UC-PURCHASE-15 | Асинхронное уведомление (ещё не реализовано) |
+
+## Каталог и заказы — 2026-11-10
+
+- BILLING-001: из баланса открыть каталог; сверить цены и количество с backend в RU/EN.
+- BILLING-002: пустой каталог/история, переходы страниц по 5 записей, возврат к балансу.
+- BILLING-003: история последних заказов и карточка совпадают с backend, включая оплату,
+  зачисление, частичный/полный возврат и snapshot цены после изменения каталога.
+- BILLING-004: обновление карточки не создаёт платёж и не выдаёт кредиты; нет checkout-ссылок.
+- BILLING-005: чужой/удалённый заказ, устаревшие кнопки, ошибка сети и сохранение меню.
+
+## Баланс — 2026-11-10
+
+- BALANCE-001: `/balance`, RU/EN-клавиатура и `menu:balance`; переход отменяет текущий ввод.
+- BALANCE-002: остатки TEXT/IMAGE, резервы и долг совпадают с backend; обновление и отсутствие данных.
+- BALANCE-003: последние 10 операций, пустая история, локализованные даты и возврат к балансу.
+- BALANCE-004: недоступный backend, устаревшие кнопки и сохранение основной клавиатуры.
+- BALANCE-005: подписка по-прежнему доступна; покупки не предлагаются.
+
 Документ описывает ручные end-to-end сценарии для production или отдельного тестового контура.
 Каждый сценарий выполняется через Telegram-клиент, а результат сверяется с сообщением бота и
 состоянием backend. После выполнения результат заносится в `docs/E2E_TEST_STATUS.md`.
 
 ## Подготовка
 
-- Открыть чат с production-ботом.
+- Для новых платёжных сценариев использовать только изолированный тестовый контур
+  по [PURCHASE_USE_CASES.md](PURCHASE_USE_CASES.md). Production не использовать для test checkout.
+- Исторические legacy-сценарии ниже проверять на явно выбранной версии и модели тарификации.
 - Убедиться, что бот отвечает на `/start`.
 - Для сценариев каналов использовать тестовый канал, где бот администратор с правом публикации.
-- Для сценариев изображений и модерации использовать тариф, в котором эти возможности включены.
+- Для legacy-сценариев изображений/модерации нужен соответствующий тариф; для prepaid —
+  включённый на отдельном стенде режим и достаточный TEXT/IMAGE баланс.
 - Не использовать личные данные и не публиковать тестовые материалы в чужие каналы.
 
 ## Сквозные сценарии
@@ -80,3 +125,12 @@ Prior subscription/monthly-usage and no-image-preview cases document legacy cove
 | PACK-008 | Purchased balances survive month boundaries; gifts granted once | Не проверено |
 | PACK-009 | Insufficient funds blocks the relevant operation; top-up/resume is idempotent | Не проверено |
 | PACK-010 | Client views, backend balances and purchase history agree | Не проверено |
+
+## Telegram prepaid client acceptance — 2026-11-10
+
+| Case | Expected behavior | Status |
+| --- | --- | --- |
+| BOT-PACK-001 | Balance, catalogue and order list/detail show backend-owned data | Не проверено |
+| BOT-PACK-002 | Paid text revision shows explicit backend quote; only confirmed quote is submitted | Не проверено |
+| BOT-PACK-003 | Image replacement requires explicit 1 IMAGE quote; stale versions fail; every action button stays within Telegram callback_data limit | Не проверено |
+| BOT-PACK-004 | Test checkout requires explicit nonproduction flag; default and production expose no purchase action | Не проверено |

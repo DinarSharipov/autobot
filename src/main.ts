@@ -15,6 +15,7 @@ const bot = createBot(
   backend,
   log,
   environment.webAdminUrl,
+  environment.testCheckoutEnabled,
 );
 let isStopping = false;
 
