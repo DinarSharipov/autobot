@@ -65,6 +65,9 @@ export type Post = {
 };
 
 export type Publication = {
+  fundingMode: 'LEGACY' | 'PREPAID';
+  fundingStatus: 'READY' | 'BLOCKED_FUNDS';
+  version: number;
   attemptCount: number;
   createdAt: string;
   errorCode: string | null;
@@ -77,6 +80,7 @@ export type Publication = {
   selectedVersionId: string | null;
   status:
     | 'AWAITING_MODERATION'
+    | 'AWAITING_MEDIA'
     | 'CANCELLED'
     | 'DELIVERY_UNKNOWN'
     | 'FAILED'
@@ -311,6 +315,60 @@ export class BackendClient {
       '/api/v1/wallets',
       {},
       walletsResponseSchema,
+    );
+    return response.data;
+  }
+
+  async listPublications(
+    telegramUserId: string,
+    cursor?: string,
+  ): Promise<ApiPage<Publication>> {
+    const query = new URLSearchParams({ limit: '5' });
+    if (cursor) query.set('cursor', cursor);
+    return this.request<ApiPage<Publication>>(
+      telegramUserId,
+      'GET',
+      `/api/v1/publications?${query.toString()}`,
+    );
+  }
+
+  async getPublication(
+    telegramUserId: string,
+    publicationId: string,
+  ): Promise<Publication> {
+    const response = await this.request<ApiEnvelope<Publication>>(
+      telegramUserId,
+      'GET',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}`,
+    );
+    return response.data;
+  }
+
+  async resumeGeneration(
+    telegramUserId: string,
+    publicationId: string,
+    idempotencyKey: string,
+  ): Promise<Publication> {
+    const response = await this.request<ApiEnvelope<Publication>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}/generation/resume`,
+      { idempotencyKey },
+    );
+    return response.data;
+  }
+
+  async resumePublicationMedia(
+    telegramUserId: string,
+    publicationId: string,
+    mediaId: string,
+    idempotencyKey: string,
+  ): Promise<PublicationMedia> {
+    const response = await this.request<ApiEnvelope<PublicationMedia>>(
+      telegramUserId,
+      'POST',
+      `/api/v1/publications/${encodeURIComponent(publicationId)}/media/${encodeURIComponent(mediaId)}/resume`,
+      { idempotencyKey },
     );
     return response.data;
   }

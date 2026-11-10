@@ -43,6 +43,8 @@ export async function showBalance(
       context.t('balance-page', { wallets: items.join('\n\n') }),
       {
         reply_markup: new InlineKeyboard()
+          .text(context.t('generation-publications'), 'generation:list')
+          .row()
           .text(context.t('billing-catalogue'), 'billing:packs:0')
           .row()
           .text(context.t('billing-orders'), 'billing:orders:0')

@@ -1,5 +1,25 @@
 # User-facing text. Keep message IDs and variable names aligned across locales.
 section-balance = Баланс
+generation-publications = Публикации и возобновление
+generation-open = Публикация { $id }
+generation-item = { $id } · { $date } · { $status }
+generation-list =
+    Публикации:
+
+    { $items }
+generation-detail =
+    Публикация { $id }
+    Статус: { $status }
+    { $funding }
+
+    Пополнение не запускает генерацию автоматически. После пополнения обновите страницу и явно возобновите нужную операцию. Запрос продолжит ранее согласованную генерацию с её стоимостью; это не новая покупка пакета.
+generation-blocked = Генерация приостановлена из-за недостатка нужного типа кредитов или задолженности.
+generation-not-blocked = Блокировка из-за баланса отсутствует. Статус отражает состояние сервиса; постановка в очередь ещё не означает завершение генерации.
+generation-resume-text = Возобновить TEXT после пополнения
+generation-resume-image = Возобновить IMAGE после пополнения
+generation-refresh = Обновить публикацию
+error-generation-unavailable = Эту операцию сейчас нельзя возобновить. Обновите публикацию и проверьте её состояние.
+status-awaiting-media = ожидает изображения
 checkout-select = Выбрать: { $summary }
 checkout-packs-page =
     Тестовый каталог · страница { $page }

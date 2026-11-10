@@ -63,8 +63,6 @@ All cases below are **Not verified**; no test-shop payment or live Telegram run 
   plus changed catalogue; recover through history rather than duplicate order.
 - CHECKOUT-008: RU/EN, HTTPS link, separate statuses, stale callbacks and main keyboard.
 
-## Remaining work
-
 ## Code review fixes — 2026-11-10
 
 - Order creation/replay is followed by an owned GET before rendering: cached creation
@@ -80,6 +78,18 @@ All cases below are **Not verified**; no test-shop payment or live Telegram run 
   Payment create/check POST requests retain explicit user-controlled retry.
 
 Static validation does not constitute live acceptance; all manual cases remain pending.
+
+## Explicit generation resume
+
+Balance now links to owned publications with backend cursor pagination. A publication detail
+shows server status and funds block. TEXT resume is offered for a prepaid PENDING occurrence
+blocked by insufficient TEXT; IMAGE resume targets the existing BLOCKED_FUNDS media operation.
+Both use the implemented backend POST resume routes and stable per-user/operation/version keys.
+No new publication, quote, pack purchase or automatic spend is created by the client.
+The user explicitly continues previously approved work; backend rechecks eligibility and funds.
+After a resume request the publication is reread; queued work is not shown as completed generation.
+Transient page tokens expire/clear with navigation; after restart reopen the durable publication
+from the list. A fresh server version distinguishes a later explicit retry after a new funds block.
 
 ## Remaining work after code review
 

@@ -6,7 +6,8 @@
 Checkout review fixes (2026-11-10): fresh owned read after create/replay, explicit payment
 recheck for fulfilled orders, refund-aware checkout, safe invalid-link handling and runtime
 billing response validation implemented. Automatic retries preserve existing idempotency policy.
-Manual acceptance pending; generation resume UI and asynchronous notifications remain separate work.
+Explicit TEXT/IMAGE generation resume from owned publications is implemented with stable request
+keys and fresh server status. Manual acceptance and asynchronous result notifications remain pending.
 
 Test checkout (2026-11-10): order creation with stable keys, explicit snapshot-price confirmation,
 test payment create/recovery/check, and restart recovery from order history are implemented.

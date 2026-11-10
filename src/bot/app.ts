@@ -2,6 +2,7 @@ import { Bot } from 'grammy';
 import { createBalanceFeature } from './balance.js';
 import { createBillingFeature } from './billing.js';
 import { createCheckoutFeature } from './checkout.js';
+import { createGenerationFeature } from './generation.js';
 
 import type { BackendClient } from '../backend/client.js';
 import type { Logger } from '../logging.js';
@@ -29,6 +30,7 @@ export function createBot(
   bot.use(createBalanceFeature(backend));
   bot.use(createBillingFeature(backend, testCheckoutEnabled));
   bot.use(createCheckoutFeature(backend, testCheckoutEnabled));
+  bot.use(createGenerationFeature(backend));
   bot.use(createChannelFeature(backend));
   bot.use(createPostFeature(backend));
   bot.use(createModerationFeature(backend));

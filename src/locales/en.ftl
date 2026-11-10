@@ -1,5 +1,25 @@
 # User-facing text. Keep message IDs and variable names aligned across locales.
 section-balance = Balance
+generation-publications = Publications and resume
+generation-open = Publication { $id }
+generation-item = { $id } · { $date } · { $status }
+generation-list =
+    Publications:
+
+    { $items }
+generation-detail =
+    Publication { $id }
+    Status: { $status }
+    { $funding }
+
+    Adding credits does not start generation automatically. After topping up, refresh and explicitly resume the operation. This continues the previously approved generation at its approved cost; it does not buy a new pack.
+generation-blocked = Generation is blocked by insufficient credits of the required type or outstanding debt.
+generation-not-blocked = No balance block. The service status is shown; queuing does not mean generation has finished.
+generation-resume-text = Resume TEXT after top-up
+generation-resume-image = Resume IMAGE after top-up
+generation-refresh = Refresh publication
+error-generation-unavailable = This operation cannot be resumed now. Refresh the publication and check its state.
+status-awaiting-media = awaiting image
 checkout-select = Select: { $summary }
 checkout-packs-page =
     Test catalogue · page { $page }

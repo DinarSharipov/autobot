@@ -33,6 +33,7 @@ const STATUS_KEYS: Record<string, string> = {
   CANCELLED: 'status-cancelled',
   DRAFT: 'status-draft',
   AWAITING_MODERATION: 'status-awaiting-moderation',
+  AWAITING_MEDIA: 'status-awaiting-media',
   DELIVERY_UNKNOWN: 'status-delivery-unknown',
   FAILED: 'status-failed',
   GENERATING: 'status-generating',
