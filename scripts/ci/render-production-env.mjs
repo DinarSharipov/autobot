@@ -43,10 +43,26 @@ if (webAdminUrl) {
   }
 }
 
+const activeHmacKeyId = safeValue('BOT_SERVICE_ACTIVE_KEY_ID', '');
+const activeHmacSecret = safeValue('BOT_SERVICE_ACTIVE_SECRET', '');
+
+if (Boolean(activeHmacKeyId) !== Boolean(activeHmacSecret)) {
+  throw new Error('BOT_SERVICE_ACTIVE_KEY_ID and BOT_SERVICE_ACTIVE_SECRET must be set together');
+}
+if (activeHmacSecret && activeHmacSecret.length < 32) {
+  throw new Error('BOT_SERVICE_ACTIVE_SECRET must be at least 32 characters');
+}
+
 const values = {
   AUTOBOT_BOT_IMAGE: required('AUTOBOT_BOT_IMAGE'),
   BACKEND_URL: backendUrl,
   BUILD_SHA: required('BUILD_SHA'),
+  ...(activeHmacKeyId
+    ? {
+        BOT_SERVICE_ACTIVE_KEY_ID: activeHmacKeyId,
+        BOT_SERVICE_ACTIVE_SECRET: activeHmacSecret,
+      }
+    : {}),
   LOG_LEVEL: safeValue('LOG_LEVEL', 'info'),
   TELEGRAM_TOKEN: required('TELEGRAM_TOKEN'),
   WEB_ADMIN_URL: webAdminUrl,
