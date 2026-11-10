@@ -31,9 +31,9 @@ standalone Web Admin is introduced later, setting it to its public URL will show
 button in the bot’s main menu.
 
 ## Validation
+
 Isolated test checkout is disabled by default and unavailable in production mode.
 See [test checkout client](docs/TEST_CHECKOUT_CLIENT.md) for setup and acceptance.
-
 
 ```bash
 npm run locales:check

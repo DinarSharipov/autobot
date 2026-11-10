@@ -6,6 +6,12 @@ on:
   push:
     branches: [dev]
   workflow_dispatch:
+    inputs:
+      show_deploy_public_key:
+        description: 'Print the public half of the configured deploy key for registering a new server'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -15,6 +21,24 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  deploy-key-public:
+    name: Inspect deployment public key
+    if: github.event_name == 'workflow_dispatch' && inputs.show_deploy_public_key
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Print public SSH key for authorization on the new host
+        shell: bash
+        env:
+          PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$PRIVATE_KEY"
+          umask 077
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/key"
+          ssh-keygen -y -f "$RUNNER_TEMP/key"
+
   quality:
     name: Quality gates
     runs-on: ubuntu-latest
@@ -115,6 +139,8 @@ jobs:
       SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
       SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
       TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      BOT_SERVICE_ACTIVE_SECRET: ${{ secrets.BOT_SERVICE_ACTIVE_SECRET }}
+      BOT_SERVICE_ACTIVE_KEY_ID: ${{ vars.BOT_SERVICE_ACTIVE_KEY_ID }}
       BACKEND_URL: ${{ vars.BACKEND_URL }}
       LOG_LEVEL: ${{ vars.LOG_LEVEL }}
       WEB_ADMIN_URL: ${{ vars.WEB_ADMIN_URL }}

@@ -49,6 +49,8 @@ const values = {
   BUILD_SHA: required('BUILD_SHA'),
   LOG_LEVEL: safeValue('LOG_LEVEL', 'info'),
   TELEGRAM_TOKEN: required('TELEGRAM_TOKEN'),
+  BOT_SERVICE_ACTIVE_KEY_ID: required('BOT_SERVICE_ACTIVE_KEY_ID'),
+  BOT_SERVICE_ACTIVE_SECRET: required('BOT_SERVICE_ACTIVE_SECRET'),
   WEB_ADMIN_URL: webAdminUrl,
 };
 
